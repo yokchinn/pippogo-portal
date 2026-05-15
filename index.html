@@ -304,7 +304,7 @@ tr:hover td{background:var(--gray-50);}
           <div class="stat-card"><div class="stat-label">ผู้ประกอบการทั้งหมด</div><div class="stat-value blue" id="statUsers">-</div></div>
           <div class="stat-card"><div class="stat-label">รอ Approve</div><div class="stat-value orange" id="statPending">-</div></div>
           <div class="stat-card"><div class="stat-label">สถานที่ทั้งหมด</div><div class="stat-value green" id="statPlaces">-</div></div>
-          <div class="stat-card"><div class="stat-label">Revenue รวม (฿)</div><div class="stat-value" id="statRevenue">-</div></div>
+          <div class="stat-card"><div class="stat-label">📝 สมัครเดือนนี้</div><div class="stat-value" id="statNewThisMonth">-</div></div>
         </div>
         <div class="two-col">
           <div class="card">
@@ -1087,9 +1087,14 @@ async function loadAdminData() {
   document.getElementById('statPlaces').textContent = placesSnap.size;
   document.getElementById('pendingCount').textContent = pendingSnap.size || '';
 
-  let totalRev = 0;
-  bookingsSnap.docs.forEach(doc => totalRev += Number(doc.data().totalPrice||0));
-  document.getElementById('statRevenue').textContent = totalRev.toLocaleString();
+  const thisMonthStart = new Date(); thisMonthStart.setDate(1); thisMonthStart.setHours(0,0,0,0);
+  let newThisMonth = 0;
+  usersSnap.docs.forEach(doc => {
+    const d = doc.data();
+    const createdAt = d.createdAt?.toDate ? d.createdAt.toDate() : null;
+    if (createdAt && createdAt >= thisMonthStart) newThisMonth++;
+  });
+  document.getElementById('statNewThisMonth').textContent = newThisMonth;
 
   const rp = document.getElementById('recentPending');
   if (pendingSnap.empty) { rp.innerHTML = '<div class="empty-state"><p>ไม่มีรายการรอ</p></div>'; }
