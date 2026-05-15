@@ -329,6 +329,7 @@ tr:hover td{background:var(--gray-50);}
       <div class="page" id="page-adminUsers">
         <div class="flex-between">
           <div><div class="page-title">ผู้ประกอบการ</div><div class="page-sub">จัดการ account ผู้ประกอบการทั้งหมด</div></div>
+          <button class="btn btn-primary btn-sm" onclick="openAddBizModal()">+ เพิ่มผู้ประกอบการ</button>
         </div>
         <div id="userList"><div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div></div>
       </div>
@@ -457,6 +458,57 @@ tr:hover td{background:var(--gray-50);}
     </div>
     <div class="modal-footer">
       <button class="btn btn-primary btn-sm" id="changePassBtn" onclick="changePassword()">เปลี่ยนรหัสผ่าน</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal: Admin Add Business -->
+<div class="modal-overlay" id="addBizModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h3>🏪 เพิ่มผู้ประกอบการ</h3>
+      <button class="modal-close" onclick="closeModal('addBizModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="addBizMsg"></div>
+
+      <div class="field">
+        <label>ประเภทธุรกิจ *</label>
+        <select id="addBizType" style="font-family:var(--font);font-size:14px;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);width:100%;outline:none;">
+          <option value="">-- เลือกประเภท --</option>
+          <option value="hotel">🏨 โรงแรม</option>
+          <option value="cafe">🍽️ ร้านอาหาร/คาเฟ่</option>
+          <option value="mall">🏬 ห้างสรรพสินค้า</option>
+          <option value="attraction">🌳 สถานที่ท่องเที่ยว</option>
+          <option value="vet">🏥 โรงพยาบาลสัตว์</option>
+          <option value="petshop">🛍️ Pet Shop</option>
+          <option value="boarding">🏡 รับฝากสัตว์เลี้ยง</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>ชื่อธุรกิจ *</label>
+        <input type="text" id="addBizName" placeholder="ชื่อสถานที่">
+      </div>
+
+      <div class="field">
+        <label>อีเมล Login *</label>
+        <input type="email" id="addBizEmail" placeholder="business@example.com">
+      </div>
+
+      <div class="field">
+        <label>รหัสผ่านชั่วคราว * (อย่างน้อย 8 ตัว)</label>
+        <input type="password" id="addBizPass" placeholder="ตั้งรหัสผ่านชั่วคราวให้เขา">
+      </div>
+
+      <p style="font-size:12px;color:var(--gray-500);background:var(--gray-100);padding:10px;border-radius:8px;margin-top:4px">
+        ✅ Admin เพิ่มเอง = ขึ้นแอปทันที ไม่ต้อง Approve<br>
+        🔑 ผู้ประกอบการสามารถเปลี่ยนรหัสผ่านเองได้หลัง Login
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary btn-sm" id="addBizBtn" onclick="adminAddBusiness()">✓ เพิ่มและขึ้นแอปทันที</button>
     </div>
   </div>
 </div>
@@ -1486,6 +1538,69 @@ async function removeAdmin(id, email) {
 หมายเหตุ: account Firebase Auth ยังคงอยู่ แต่จะไม่สามารถเข้าระบบ Admin ได้`)) return;
   await db.collection('admins').doc(id).delete();
   loadAdminTeam();
+}
+
+
+
+// ─── Admin: Add Business ───
+function openAddBizModal() {
+  document.getElementById('addBizType').value = '';
+  document.getElementById('addBizName').value = '';
+  document.getElementById('addBizEmail').value = '';
+  document.getElementById('addBizPass').value = '';
+  document.getElementById('addBizMsg').innerHTML = '';
+  openModal('addBizModal');
+}
+
+async function adminAddBusiness() {
+  const type = document.getElementById('addBizType').value;
+  const name = document.getElementById('addBizName').value.trim();
+  const email = document.getElementById('addBizEmail').value.trim();
+  const pass = document.getElementById('addBizPass').value;
+  const msgEl = document.getElementById('addBizMsg');
+  const btn = document.getElementById('addBizBtn');
+  msgEl.innerHTML = '';
+
+  if (!type || !name || !email || !pass) {
+    msgEl.innerHTML = '<div class="error-msg">กรุณากรอกให้ครบทุกช่อง</div>'; return;
+  }
+  if (pass.length < 8) {
+    msgEl.innerHTML = '<div class="error-msg">รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร</div>'; return;
+  }
+
+  btn.disabled = true; btn.textContent = 'กำลังสร้าง...';
+
+  try {
+    // สร้าง Firebase Auth account
+    const secondary = firebase.initializeApp(firebaseConfig, 'biz_add_' + Date.now());
+    const secAuth = secondary.auth();
+    await secAuth.createUserWithEmailAndPassword(email, pass);
+    await secAuth.signOut();
+    await secondary.delete();
+
+    // บันทึกใน business_accounts — status: approved ทันที
+    await db.collection('business_accounts').add({
+      email, bizType: type, bizName: name,
+      status: 'approved',
+      addedBy: 'admin',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    closeModal('addBizModal');
+    loadUsers();
+    alert(`✅ เพิ่มผู้ประกอบการสำเร็จ!
+
+อีเมล: ${email}
+รหัสผ่าน: ${pass}
+
+ส่งข้อมูลนี้ให้ผู้ประกอบการ
+เขาสามารถเปลี่ยนรหัสผ่านได้หลัง Login`);
+  } catch(e) {
+    let msg = 'เกิดข้อผิดพลาด: ' + e.message;
+    if (e.code === 'auth/email-already-in-use') msg = 'อีเมลนี้มีผู้ใช้แล้ว';
+    msgEl.innerHTML = '<div class="error-msg">' + msg + '</div>';
+  }
+  btn.disabled = false; btn.textContent = '✓ เพิ่มและขึ้นแอปทันที';
 }
 
 
