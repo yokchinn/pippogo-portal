@@ -265,6 +265,7 @@ tr:hover td{background:var(--gray-50);}
       <span class="admin-badge" id="adminBadge" style="display:none">ADMIN</span>
       <span class="biz-badge" id="bizTypeBadge" style="display:none"></span>
       <span class="user-badge" id="userEmail">-</span>
+      <button class="logout-btn" onclick="openChangePassword()" style="background:rgba(255,255,255,0.1)">🔑 เปลี่ยนรหัสผ่าน</button>
       <button class="logout-btn" onclick="handleLogout()">ออกจากระบบ</button>
     </div>
   </div>
@@ -280,6 +281,7 @@ tr:hover td{background:var(--gray-50);}
         <button class="nav-item" onclick="goPage('adminPlaces')"><span>📍</span> สถานที่ทั้งหมด</button>
         <button class="nav-item" onclick="goPage('adminBookings')"><span>📋</span> Bookings</button>
         <button class="nav-item" onclick="goPage('adminRevenue')"><span>💰</span> Revenue</button>
+        <button class="nav-item" onclick="goPage('adminTeam')"><span>🛡️</span> จัดการ Admin</button>
       </div>
 
       <!-- Business Nav -->
@@ -370,6 +372,15 @@ tr:hover td{background:var(--gray-50);}
         <div class="card"><div class="card-title">💰 รายได้แยกตามโรงแรม</div><div id="revenueByHotel"><div class="loading">กำลังโหลด...</div></div></div>
       </div>
 
+      <!-- ─── ADMIN: Team ─── -->
+      <div class="page" id="page-adminTeam">
+        <div class="flex-between">
+          <div><div class="page-title">จัดการ Admin</div><div class="page-sub">เพิ่ม/ลบสมาชิกทีม Admin</div></div>
+          <button class="btn btn-primary btn-sm" onclick="openInviteAdminModal()">+ เชิญ Admin ใหม่</button>
+        </div>
+        <div id="adminTeamList"><div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div></div>
+      </div>
+
       <!-- ─── BIZ: ข้อมูลธุรกิจ ─── -->
       <div class="page" id="page-bizInfo">
         <div class="page-title" id="bizInfoTitle">ข้อมูลธุรกิจ</div>
@@ -420,6 +431,67 @@ tr:hover td{background:var(--gray-50);}
   </div>
 </div>
 
+
+
+<!-- Modal: Change Password -->
+<div class="modal-overlay" id="changePassModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3>🔑 เปลี่ยนรหัสผ่าน</h3>
+      <button class="modal-close" onclick="closeModal('changePassModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="changePassMsg"></div>
+      <div class="field">
+        <label>รหัสผ่านปัจจุบัน *</label>
+        <input type="password" id="currentPass" placeholder="รหัสผ่านปัจจุบัน">
+      </div>
+      <div class="field">
+        <label>รหัสผ่านใหม่ * (อย่างน้อย 8 ตัว)</label>
+        <input type="password" id="newPass" placeholder="รหัสผ่านใหม่">
+      </div>
+      <div class="field">
+        <label>ยืนยันรหัสผ่านใหม่ *</label>
+        <input type="password" id="newPass2" placeholder="กรอกรหัสผ่านใหม่อีกครั้ง">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary btn-sm" id="changePassBtn" onclick="changePassword()">เปลี่ยนรหัสผ่าน</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Invite Admin -->
+<div class="modal-overlay" id="inviteAdminModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h3>🛡️ เชิญ Admin ใหม่</h3>
+      <button class="modal-close" onclick="closeModal('inviteAdminModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="inviteAdminMsg"></div>
+      <div class="field">
+        <label>ชื่อ Admin *</label>
+        <input type="text" id="inviteAdminName" placeholder="ชื่อ-นามสกุล">
+      </div>
+      <div class="field">
+        <label>อีเมล *</label>
+        <input type="email" id="inviteAdminEmail" placeholder="admin@example.com">
+      </div>
+      <div class="field">
+        <label>รหัสผ่านเริ่มต้น *</label>
+        <input type="password" id="inviteAdminPass" placeholder="อย่างน้อย 8 ตัวอักษร">
+        <p style="font-size:11px;color:var(--gray-500);margin-top:4px">Admin ใหม่สามารถเปลี่ยนรหัสผ่านได้ภายหลัง</p>
+      </div>
+      <p style="font-size:12px;color:var(--gray-500);background:var(--gray-100);padding:10px;border-radius:8px">
+        🔒 คุณเป็นคนตั้งรหัสผ่านให้ก่อน แล้วส่งให้ Admin ใหม่เปลี่ยนเองได้ — หรือจะใช้ Firebase Console รีเซ็ต password ให้เขาได้เลยครับ
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary btn-sm" id="inviteAdminBtn" onclick="inviteAdmin()">เพิ่ม Admin</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal: Add Place (Admin) -->
 <div class="modal-overlay" id="addPlaceModal">
@@ -861,7 +933,11 @@ auth.onAuthStateChanged(async (user) => {
   document.getElementById('mainApp').classList.add('visible');
   document.getElementById('userEmail').textContent = user.email;
 
-  if (ADMIN_EMAILS.includes(user.email)) {
+  // เช็ค admin จากทั้ง hardcode list และ Firestore
+  const adminSnap = await db.collection('admins').where('email','==',user.email).limit(1).get();
+  const isAdmin = ADMIN_EMAILS.includes(user.email) || !adminSnap.empty;
+
+  if (isAdmin) {
     currentRole = 'admin';
     document.getElementById('adminBadge').style.display = 'inline';
     document.getElementById('portalLabel').textContent = 'Admin Dashboard';
@@ -911,6 +987,7 @@ function goPage(pageId) {
   if (pageId === 'adminPlaces') loadPlaces('all');
   if (pageId === 'adminBookings') loadAdminBookings();
   if (pageId === 'adminRevenue') loadRevenue();
+  if (pageId === 'adminTeam') loadAdminTeam();
   if (pageId === 'bizRooms') loadRooms();
   if (pageId === 'bizBookings') loadBizBookings();
   if (pageId === 'bizStatus') loadBizStatus();
@@ -1264,6 +1341,151 @@ async function loadBizStatus() {
     const dt = d.submittedAt?.toDate?d.submittedAt.toDate().toLocaleString('th-TH'):'-';
     tbody.innerHTML += `<tr><td>${dt}</td><td>${d.data?.name||'-'}</td><td><span class="badge badge-${d.status}">${d.status==='pending'?'รอ Review':d.status==='approved'?'Approved':'Rejected'}</span></td><td>${d.adminNote||'-'}</td></tr>`;
   });
+}
+
+
+
+
+// ─── Change Password ───
+function openChangePassword() {
+  document.getElementById('currentPass').value = '';
+  document.getElementById('newPass').value = '';
+  document.getElementById('newPass2').value = '';
+  document.getElementById('changePassMsg').innerHTML = '';
+  openModal('changePassModal');
+}
+
+async function changePassword() {
+  const currentPass = document.getElementById('currentPass').value;
+  const newPass = document.getElementById('newPass').value;
+  const newPass2 = document.getElementById('newPass2').value;
+  const msgEl = document.getElementById('changePassMsg');
+  const btn = document.getElementById('changePassBtn');
+  msgEl.innerHTML = '';
+
+  if (!currentPass || !newPass || !newPass2) {
+    msgEl.innerHTML = '<div class="error-msg">กรุณากรอกให้ครบทุกช่อง</div>'; return;
+  }
+  if (newPass.length < 8) {
+    msgEl.innerHTML = '<div class="error-msg">รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร</div>'; return;
+  }
+  if (newPass !== newPass2) {
+    msgEl.innerHTML = '<div class="error-msg">รหัสผ่านใหม่ไม่ตรงกัน</div>'; return;
+  }
+
+  btn.disabled = true; btn.textContent = 'กำลังเปลี่ยน...';
+
+  try {
+    // Re-authenticate ก่อน
+    const credential = firebase.auth.EmailAuthProvider.credential(currentUser.email, currentPass);
+    await currentUser.reauthenticateWithCredential(credential);
+    // เปลี่ยน password
+    await currentUser.updatePassword(newPass);
+    closeModal('changePassModal');
+    alert('✅ เปลี่ยนรหัสผ่านสำเร็จแล้วครับ!');
+  } catch(e) {
+    let msg = 'เกิดข้อผิดพลาด: ' + e.message;
+    if (e.code === 'auth/wrong-password') msg = 'รหัสผ่านปัจจุบันไม่ถูกต้อง';
+    if (e.code === 'auth/too-many-requests') msg = 'ลองใหม่อีกครั้งในภายหลัง (ล็อกชั่วคราว)';
+    msgEl.innerHTML = '<div class="error-msg">' + msg + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'เปลี่ยนรหัสผ่าน';
+}
+
+
+// ─── Admin: Team Management ───
+async function loadAdminTeam() {
+  const el = document.getElementById('adminTeamList');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div>';
+  try {
+    const snap = await db.collection('admins').orderBy('createdAt', 'desc').get();
+    if (snap.empty) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">🛡️</div><p>ยังไม่มี Admin อื่น<br><span style="font-size:12px">กด "+ เชิญ Admin ใหม่" เพื่อเพิ่ม</span></p></div>';
+      return;
+    }
+    el.innerHTML = '<div class="card"><table><thead><tr><th>ชื่อ</th><th>อีเมล</th><th>เพิ่มโดย</th><th>วันที่เพิ่ม</th><th></th></tr></thead><tbody id="adminTeamTbody"></tbody></table></div>';
+    const tbody = document.getElementById('adminTeamTbody');
+    snap.docs.forEach(doc => {
+      const d = doc.data();
+      const dt = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('th-TH') : '-';
+      const isSelf = d.email === currentUser.email;
+      tbody.innerHTML += `<tr>
+        <td><strong>${d.name||'-'}</strong></td>
+        <td>${d.email}</td>
+        <td>${d.addedBy||'-'}</td>
+        <td>${dt}</td>
+        <td>${isSelf ? '<span style="font-size:11px;color:var(--gray-500)">คุณเอง</span>' : 
+          `<button class="btn-icon btn-reject" onclick="removeAdmin('${doc.id}','${d.email}')">ลบ</button>`}
+        </td>
+      </tr>`;
+    });
+  } catch(e) {
+    el.innerHTML = '<div class="empty-state"><p>เกิดข้อผิดพลาด: ' + e.message + '</p></div>';
+  }
+}
+
+function openInviteAdminModal() {
+  document.getElementById('inviteAdminName').value = '';
+  document.getElementById('inviteAdminEmail').value = '';
+  document.getElementById('inviteAdminPass').value = '';
+  document.getElementById('inviteAdminMsg').innerHTML = '';
+  openModal('inviteAdminModal');
+}
+
+async function inviteAdmin() {
+  const name = document.getElementById('inviteAdminName').value.trim();
+  const email = document.getElementById('inviteAdminEmail').value.trim();
+  const pass = document.getElementById('inviteAdminPass').value;
+  const msgEl = document.getElementById('inviteAdminMsg');
+  const btn = document.getElementById('inviteAdminBtn');
+  msgEl.innerHTML = '';
+
+  if (!name || !email || !pass) {
+    msgEl.innerHTML = '<div class="error-msg">กรุณากรอกให้ครบทุกช่อง</div>'; return;
+  }
+  if (pass.length < 8) {
+    msgEl.innerHTML = '<div class="error-msg">รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร</div>'; return;
+  }
+
+  btn.disabled = true; btn.textContent = 'กำลังสร้าง...';
+
+  try {
+    // สร้าง Firebase Auth account สำหรับ Admin ใหม่
+    const secondary = firebase.initializeApp(firebaseConfig, 'admin_invite_' + Date.now());
+    const secAuth = secondary.auth();
+    await secAuth.createUserWithEmailAndPassword(email, pass);
+    await secAuth.signOut();
+    await secondary.delete();
+
+    // บันทึกใน Firestore admins collection
+    await db.collection('admins').add({
+      name, email,
+      addedBy: currentUser.email,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    closeModal('inviteAdminModal');
+    loadAdminTeam();
+    alert(`✅ เพิ่ม Admin สำเร็จ!
+
+อีเมล: ${email}
+รหัสผ่าน: ${pass}
+
+ส่งข้อมูลนี้ให้ Admin ใหม่ได้เลยครับ`);
+  } catch(e) {
+    let msg = 'เกิดข้อผิดพลาด: ' + e.message;
+    if (e.code === 'auth/email-already-in-use') msg = 'อีเมลนี้มีผู้ใช้แล้ว';
+    msgEl.innerHTML = '<div class="error-msg">' + msg + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'เพิ่ม Admin';
+}
+
+async function removeAdmin(id, email) {
+  if (!confirm(`ลบ Admin ${email} ออกจากระบบ?
+
+หมายเหตุ: account Firebase Auth ยังคงอยู่ แต่จะไม่สามารถเข้าระบบ Admin ได้`)) return;
+  await db.collection('admins').doc(id).delete();
+  loadAdminTeam();
 }
 
 
