@@ -333,8 +333,10 @@ tr:hover td{background:var(--gray-50);}
 
       <!-- ─── ADMIN: Places ─── -->
       <div class="page" id="page-adminPlaces">
-        <div class="page-title">สถานที่ทั้งหมด</div>
-        <div class="page-sub">สถานที่ทุกประเภทใน PippoGO</div>
+        <div class="flex-between">
+          <div><div class="page-title">สถานที่ทั้งหมด</div><div class="page-sub">สถานที่ทุกประเภทใน PippoGO</div></div>
+          <button class="btn btn-primary btn-sm" onclick="openAddPlaceModal()">+ เพิ่มสถานที่</button>
+        </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
           <button class="btn-icon btn-view" onclick="filterPlaces('all')">ทั้งหมด</button>
           <button class="btn-icon" style="background:var(--blue-light);color:var(--blue)" onclick="filterPlaces('hotel')">🏨 โรงแรม</button>
@@ -414,6 +416,35 @@ tr:hover td{background:var(--gray-50);}
     <div class="modal-footer">
       <button class="btn btn-danger btn-sm" onclick="rejectUpdate()">✕ Reject</button>
       <button class="btn btn-success btn-sm" onclick="approveUpdate()">✓ Approve & ขึ้นแอป</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal: Add Place (Admin) -->
+<div class="modal-overlay" id="addPlaceModal">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-header">
+      <h3 id="addPlaceModalTitle">📍 เพิ่มสถานที่</h3>
+      <button class="modal-close" onclick="closeModal('addPlaceModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="addPlaceMsg"></div>
+      <div class="field" style="margin-bottom:16px">
+        <label>ประเภทสถานที่ *</label>
+        <select id="addPlaceType" onchange="renderAddPlaceForm()" style="font-family:var(--font);font-size:14px;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);width:100%;outline:none;">
+          <option value="">-- เลือกประเภท --</option>
+          <option value="cafe">🍽️ ร้านอาหาร/คาเฟ่</option>
+          <option value="mall">🏬 ห้างสรรพสินค้า</option>
+          <option value="attraction">🌳 สถานที่ท่องเที่ยว</option>
+          <option value="vet">🏥 โรงพยาบาลสัตว์</option>
+          <option value="petshop">🛍️ Pet Shop</option>
+        </select>
+      </div>
+      <div id="addPlaceFormBody"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary btn-sm" onclick="saveNewPlace()">✓ เพิ่มสถานที่ & ขึ้นแอปทันที</button>
     </div>
   </div>
 </div>
@@ -1233,6 +1264,40 @@ async function loadBizStatus() {
     const dt = d.submittedAt?.toDate?d.submittedAt.toDate().toLocaleString('th-TH'):'-';
     tbody.innerHTML += `<tr><td>${dt}</td><td>${d.data?.name||'-'}</td><td><span class="badge badge-${d.status}">${d.status==='pending'?'รอ Review':d.status==='approved'?'Approved':'Rejected'}</span></td><td>${d.adminNote||'-'}</td></tr>`;
   });
+}
+
+
+// ─── Admin: Add Place ───
+function openAddPlaceModal() {
+  document.getElementById('addPlaceType').value = '';
+  document.getElementById('addPlaceFormBody').innerHTML = '';
+  document.getElementById('addPlaceMsg').innerHTML = '';
+  openModal('addPlaceModal');
+}
+
+function renderAddPlaceForm() {
+  const type = document.getElementById('addPlaceType').value;
+  if (!type) { document.getElementById('addPlaceFormBody').innerHTML = ''; return; }
+  document.getElementById('addPlaceFormBody').innerHTML = getBizForm(type, {});
+}
+
+async function saveNewPlace() {
+  const type = document.getElementById('addPlaceType').value;
+  const msgEl = document.getElementById('addPlaceMsg');
+  msgEl.innerHTML = '';
+  if (!type) { msgEl.innerHTML = '<div class="error-msg">กรุณาเลือกประเภทสถานที่</div>'; return; }
+  const data = collectBizFormData(type);
+  if (!data.name || !data.province) { msgEl.innerHTML = '<div class="error-msg">กรุณากรอกชื่อสถานที่และจังหวัด</div>'; return; }
+  data.sync_status = 'synced';
+  data.addedBy = 'admin';
+  data.addedAt = firebase.firestore.FieldValue.serverTimestamp();
+  try {
+    await db.collection('places').add(data);
+    closeModal('addPlaceModal');
+    loadPlaces('all');
+    loadAdminData();
+    alert('✅ เพิ่มสถานที่สำเร็จ! ขึ้นแอปแล้ว');
+  } catch(e) { msgEl.innerHTML = '<div class="error-msg">เกิดข้อผิดพลาด: ' + e.message + '</div>'; }
 }
 
 // ─── Utils ───
