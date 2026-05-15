@@ -280,8 +280,8 @@ tr:hover td{background:var(--gray-50);}
         <button class="nav-item" onclick="goPage('adminUsers')"><span>👥</span> ผู้ประกอบการ</button>
         <button class="nav-item" onclick="goPage('adminPlaces')"><span>📍</span> สถานที่ทั้งหมด</button>
         <button class="nav-item" onclick="goPage('adminBookings')"><span>📋</span> Bookings</button>
-        <button class="nav-item" onclick="goPage('adminRevenue')"><span>💰</span> Revenue</button>
-        <button class="nav-item" onclick="goPage('adminTeam')"><span>🛡️</span> จัดการ Admin</button>
+        <button class="nav-item superadmin-only" onclick="goPage('adminRevenue')"><span>💰</span> Revenue</button>
+        <button class="nav-item superadmin-only" onclick="goPage('adminTeam')"><span>🛡️</span> จัดการ Admin</button>
       </div>
 
       <!-- Business Nav -->
@@ -535,8 +535,15 @@ tr:hover td{background:var(--gray-50);}
         <input type="password" id="inviteAdminPass" placeholder="อย่างน้อย 8 ตัวอักษร">
         <p style="font-size:11px;color:var(--gray-500);margin-top:4px">Admin ใหม่สามารถเปลี่ยนรหัสผ่านได้ภายหลัง</p>
       </div>
+      <div class="field">
+        <label>Role *</label>
+        <select id="inviteAdminRole" style="font-family:var(--font);font-size:14px;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);width:100%;outline:none;">
+          <option value="admin">🛡️ Admin — เห็น Overview, Approve, ผู้ประกอบการ, สถานที่, Bookings</option>
+          <option value="superadmin">👑 Super Admin — เห็นทุกอย่าง รวม Revenue และจัดการ Admin</option>
+        </select>
+      </div>
       <p style="font-size:12px;color:var(--gray-500);background:var(--gray-100);padding:10px;border-radius:8px">
-        🔒 คุณเป็นคนตั้งรหัสผ่านให้ก่อน แล้วส่งให้ Admin ใหม่เปลี่ยนเองได้ — หรือจะใช้ Firebase Console รีเซ็ต password ให้เขาได้เลยครับ
+        🔒 คุณเป็นคนตั้งรหัสผ่านให้ก่อน แล้วส่งให้ Admin ใหม่เปลี่ยนเองได้
       </p>
     </div>
     <div class="modal-footer">
@@ -990,11 +997,27 @@ auth.onAuthStateChanged(async (user) => {
   const isAdmin = ADMIN_EMAILS.includes(user.email) || !adminSnap.empty;
 
   if (isAdmin) {
-    currentRole = 'admin';
+    // เช็ค role จาก Firestore
+    let adminRole = 'admin'; // default
+    if (ADMIN_EMAILS.includes(user.email)) {
+      adminRole = 'superadmin'; // hardcode emails = superadmin
+    } else if (!adminSnap.empty) {
+      adminRole = adminSnap.docs[0].data().role || 'admin';
+    }
+    currentRole = adminRole;
+
     document.getElementById('adminBadge').style.display = 'inline';
+    document.getElementById('adminBadge').textContent = adminRole === 'superadmin' ? '👑 SUPER ADMIN' : '🛡️ ADMIN';
     document.getElementById('portalLabel').textContent = 'Admin Dashboard';
     document.getElementById('adminNav').style.display = 'block';
     document.getElementById('bizNav').style.display = 'none';
+
+    // ซ่อน Revenue และจัดการ Admin ถ้าไม่ใช่ Super Admin
+    const isSuperAdmin = adminRole === 'superadmin';
+    document.querySelectorAll('.superadmin-only').forEach(el => {
+      el.style.display = isSuperAdmin ? 'flex' : 'none';
+    });
+
     goPage('adminOverview'); loadAdminData();
   } else {
     currentRole = 'business';
@@ -1460,7 +1483,7 @@ async function loadAdminTeam() {
       el.innerHTML = '<div class="empty-state"><div class="empty-icon">🛡️</div><p>ยังไม่มี Admin อื่น<br><span style="font-size:12px">กด "+ เชิญ Admin ใหม่" เพื่อเพิ่ม</span></p></div>';
       return;
     }
-    el.innerHTML = '<div class="card"><table><thead><tr><th>ชื่อ</th><th>อีเมล</th><th>เพิ่มโดย</th><th>วันที่เพิ่ม</th><th></th></tr></thead><tbody id="adminTeamTbody"></tbody></table></div>';
+    el.innerHTML = '<div class="card"><table><thead><tr><th>ชื่อ</th><th>อีเมล</th><th>Role</th><th>เพิ่มโดย</th><th>วันที่เพิ่ม</th><th></th></tr></thead><tbody id="adminTeamTbody"></tbody></table></div>';
     const tbody = document.getElementById('adminTeamTbody');
     snap.docs.forEach(doc => {
       const d = doc.data();
@@ -1514,9 +1537,10 @@ async function inviteAdmin() {
     await secAuth.signOut();
     await secondary.delete();
 
+    const role = document.getElementById('inviteAdminRole').value;
     // บันทึกใน Firestore admins collection
     await db.collection('admins').add({
-      name, email,
+      name, email, role,
       addedBy: currentUser.email,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
