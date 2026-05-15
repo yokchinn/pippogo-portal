@@ -1,1142 +1,1133 @@
-{\rtf1\ansi\ansicpg1252\cocoartf2868
-\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
-{\colortbl;\red255\green255\blue255;}
-{\*\expandedcolortbl;;}
-\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh12820\viewkind0
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PippoGO — Hotel Portal</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
+  :root {
+    --blue: #2561E4; --blue-light: #EBF1FD; --blue-dark: #1a4fd4;
+    --yellow: #FFD106; --yellow-dark: #e6bc00;
+    --green: #1a6b35; --green-light: #e3f5e9;
+    --red: #b00020; --red-light: #fdecea;
+    --orange: #BA7517; --orange-light: #fff8e6;
+    --gray-50: #FFFEFB; --gray-100: #f7f9fe; --gray-200: #e8edf5;
+    --gray-400: #D2D1D0; --gray-500: #6b7a8d; --gray-700: #333E50;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --radius: 12px; --radius-sm: 8px;
+    --font: 'Noto Sans Thai', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--gray-50); color: var(--gray-700); min-height: 100vh; }
 
-\f0\fs24 \cf0 <!DOCTYPE html>\
-<html lang="th">\
-<head>\
-<meta charset="UTF-8">\
-<meta name="viewport" content="width=device-width, initial-scale=1.0">\
-<title>PippoGO \'97 Hotel Portal</title>\
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>\
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>\
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>\
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>\
-<style>\
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');\
-  :root \{\
-    --blue: #2561E4; --blue-light: #EBF1FD; --blue-dark: #1a4fd4;\
-    --yellow: #FFD106; --yellow-dark: #e6bc00;\
-    --green: #1a6b35; --green-light: #e3f5e9;\
-    --red: #b00020; --red-light: #fdecea;\
-    --orange: #BA7517; --orange-light: #fff8e6;\
-    --gray-50: #FFFEFB; --gray-100: #f7f9fe; --gray-200: #e8edf5;\
-    --gray-400: #D2D1D0; --gray-500: #6b7a8d; --gray-700: #333E50;\
-    --shadow: 0 2px 12px rgba(0,0,0,0.08);\
-    --radius: 12px; --radius-sm: 8px;\
-    --font: 'Noto Sans Thai', sans-serif;\
-  \}\
-  * \{ box-sizing: border-box; margin: 0; padding: 0; \}\
-  body \{ font-family: var(--font); background: var(--gray-50); color: var(--gray-700); min-height: 100vh; \}\
-\
-  /* \uc0\u9472 \u9472 \u9472  Auth Screen \u9472 \u9472 \u9472  */\
-  .auth-screen \{ min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; \}\
-  .auth-logo \{ background: var(--blue); border-radius: 20px; padding: 16px 32px; margin-bottom: 32px; \}\
-  .auth-logo span \{ font-size: 28px; font-weight: 700; color: white; \}\
-  .auth-logo span.go \{ color: var(--yellow); \}\
-  .auth-card \{ background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 32px; width: 100%; max-width: 400px; \}\
-  .auth-card h2 \{ font-size: 20px; font-weight: 600; margin-bottom: 6px; \}\
-  .auth-card p \{ font-size: 13px; color: var(--gray-500); margin-bottom: 24px; \}\
-  .tab-row \{ display: flex; background: var(--gray-100); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 24px; \}\
-  .tab-btn \{ flex: 1; padding: 8px; border: none; background: transparent; border-radius: 6px; font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; color: var(--gray-500); transition: all 0.2s; \}\
-  .tab-btn.active \{ background: white; color: var(--blue); box-shadow: 0 1px 4px rgba(0,0,0,0.1); \}\
-\
-  /* \uc0\u9472 \u9472 \u9472  Form Elements \u9472 \u9472 \u9472  */\
-  .field \{ margin-bottom: 16px; \}\
-  .field label \{ display: block; font-size: 12px; font-weight: 600; color: var(--gray-500); margin-bottom: 6px; \}\
-  .field input, .field select, .field textarea \{\
-    width: 100%; padding: 10px 12px; border: 1.5px solid var(--gray-200);\
-    border-radius: var(--radius-sm); font-family: var(--font); font-size: 14px;\
-    color: var(--gray-700); background: white; transition: border-color 0.2s; outline: none;\
-  \}\
-  .field input:focus, .field select:focus, .field textarea:focus \{ border-color: var(--blue); \}\
-  .field textarea \{ resize: vertical; min-height: 80px; \}\
-  .btn \{ width: 100%; padding: 12px; border: none; border-radius: var(--radius-sm); font-family: var(--font); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; \}\
-  .btn-primary \{ background: var(--blue); color: white; \}\
-  .btn-primary:hover \{ background: var(--blue-dark); \}\
-  .btn-primary:disabled \{ background: var(--gray-400); cursor: not-allowed; \}\
-  .btn-danger \{ background: var(--red-light); color: var(--red); \}\
-  .btn-success \{ background: var(--green-light); color: var(--green); \}\
-  .btn-sm \{ width: auto; padding: 6px 14px; font-size: 13px; \}\
-  .error-msg \{ background: var(--red-light); color: var(--red); padding: 10px 12px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 16px; \}\
-  .success-msg \{ background: var(--green-light); color: var(--green); padding: 10px 12px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 16px; \}\
-\
-  /* \uc0\u9472 \u9472 \u9472  App Layout \u9472 \u9472 \u9472  */\
-  .app \{ display: none; min-height: 100vh; \}\
-  .app.visible \{ display: flex; flex-direction: column; \}\
-  .topbar \{ background: var(--blue); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; \}\
-  .topbar-logo \{ font-size: 18px; font-weight: 700; color: white; \}\
-  .topbar-logo span \{ color: var(--yellow); \}\
-  .topbar-right \{ display: flex; align-items: center; gap: 12px; \}\
-  .user-badge \{ background: rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: white; \}\
-  .admin-badge \{ background: var(--yellow); border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: 700; color: var(--gray-700); \}\
-  .logout-btn \{ background: rgba(255,255,255,0.15); border: none; border-radius: 20px; padding: 6px 14px; font-family: var(--font); font-size: 12px; color: white; cursor: pointer; \}\
-  .logout-btn:hover \{ background: rgba(255,255,255,0.25); \}\
-\
-  .sidebar \{ width: 220px; background: white; border-right: 1px solid var(--gray-200); padding: 20px 12px; flex-shrink: 0; min-height: calc(100vh - 56px); \}\
-  .nav-item \{ display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; color: var(--gray-500); cursor: pointer; margin-bottom: 4px; transition: all 0.2s; border: none; background: transparent; width: 100%; text-align: left; font-family: var(--font); \}\
-  .nav-item:hover \{ background: var(--gray-100); color: var(--gray-700); \}\
-  .nav-item.active \{ background: var(--blue-light); color: var(--blue); \}\
-  .nav-item .icon \{ font-size: 16px; \}\
-  .nav-section \{ font-size: 10px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1px; padding: 16px 12px 6px; \}\
-\
-  .main \{ flex: 1; padding: 28px; overflow-y: auto; \}\
-  .page \{ display: none; \}\
-  .page.active \{ display: block; \}\
-  .page-title \{ font-size: 22px; font-weight: 700; margin-bottom: 6px; \}\
-  .page-sub \{ font-size: 14px; color: var(--gray-500); margin-bottom: 28px; \}\
-\
-  /* \uc0\u9472 \u9472 \u9472  Cards \u9472 \u9472 \u9472  */\
-  .card \{ background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; margin-bottom: 20px; \}\
-  .card-title \{ font-size: 15px; font-weight: 600; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; gap: 8px; \}\
-  .stat-grid \{ display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 24px; \}\
-  .stat-card \{ background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; \}\
-  .stat-label \{ font-size: 12px; color: var(--gray-500); margin-bottom: 8px; \}\
-  .stat-value \{ font-size: 28px; font-weight: 700; color: var(--gray-700); \}\
-  .stat-value.blue \{ color: var(--blue); \}\
-  .stat-value.green \{ color: var(--green); \}\
-  .stat-value.orange \{ color: var(--orange); \}\
-\
-  /* \uc0\u9472 \u9472 \u9472  Section Grid \u9472 \u9472 \u9472  */\
-  .two-col \{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; \}\
-  @media (max-width: 768px) \{ .two-col \{ grid-template-columns: 1fr; \} .sidebar \{ display: none; \} \}\
-\
-  /* \uc0\u9472 \u9472 \u9472  Table \u9472 \u9472 \u9472  */\
-  table \{ width: 100%; border-collapse: collapse; font-size: 13px; \}\
-  th \{ text-align: left; padding: 10px 12px; background: var(--gray-100); color: var(--gray-500); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; \}\
-  td \{ padding: 12px; border-bottom: 1px solid var(--gray-200); vertical-align: middle; \}\
-  tr:last-child td \{ border-bottom: none; \}\
-  tr:hover td \{ background: var(--gray-50); \}\
-\
-  /* \uc0\u9472 \u9472 \u9472  Badges \u9472 \u9472 \u9472  */\
-  .badge \{ display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; \}\
-  .badge-pending \{ background: var(--orange-light); color: var(--orange); \}\
-  .badge-approved \{ background: var(--green-light); color: var(--green); \}\
-  .badge-rejected \{ background: var(--red-light); color: var(--red); \}\
-  .badge-confirmed \{ background: var(--blue-light); color: var(--blue); \}\
-\
-  /* \uc0\u9472 \u9472 \u9472  Hotel Form \u9472 \u9472 \u9472  */\
-  .form-section \{ margin-bottom: 24px; \}\
-  .form-section-title \{ font-size: 13px; font-weight: 700; color: var(--blue); margin-bottom: 14px; padding: 8px 12px; background: var(--blue-light); border-radius: var(--radius-sm); \}\
-  .field-row \{ display: grid; grid-template-columns: 1fr 1fr; gap: 16px; \}\
-  @media (max-width: 600px) \{ .field-row \{ grid-template-columns: 1fr; \} \}\
-  .counter-row \{ display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--gray-200); \}\
-  .counter-label \{ font-size: 14px; \}\
-  .counter-controls \{ display: flex; align-items: center; gap: 14px; \}\
-  .counter-btn \{ width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--blue); background: transparent; color: var(--blue); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: 700; line-height: 1; transition: all 0.2s; \}\
-  .counter-btn:hover \{ background: var(--blue); color: white; \}\
-  .counter-val \{ font-size: 16px; font-weight: 700; min-width: 28px; text-align: center; \}\
-\
-  /* \uc0\u9472 \u9472 \u9472  Review Modal \u9472 \u9472 \u9472  */\
-  .modal-overlay \{ position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; \}\
-  .modal-overlay.open \{ display: flex; \}\
-  .modal \{ background: white; border-radius: var(--radius); max-width: 640px; width: 100%; max-height: 80vh; overflow-y: auto; \}\
-  .modal-header \{ padding: 20px 24px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: white; \}\
-  .modal-header h3 \{ font-size: 16px; font-weight: 700; \}\
-  .modal-close \{ background: none; border: none; font-size: 20px; cursor: pointer; color: var(--gray-500); \}\
-  .modal-body \{ padding: 24px; \}\
-  .modal-footer \{ padding: 16px 24px; border-top: 1px solid var(--gray-200); display: flex; gap: 12px; justify-content: flex-end; \}\
-  .diff-row \{ display: flex; gap: 12px; margin-bottom: 10px; font-size: 13px; \}\
-  .diff-label \{ width: 140px; flex-shrink: 0; color: var(--gray-500); font-weight: 600; \}\
-  .diff-old \{ flex: 1; color: var(--red); text-decoration: line-through; \}\
-  .diff-new \{ flex: 1; color: var(--green); font-weight: 600; \}\
-\
-  /* \uc0\u9472 \u9472 \u9472  Upload Area \u9472 \u9472 \u9472  */\
-  .upload-area \{ border: 2px dashed var(--gray-400); border-radius: var(--radius-sm); padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s; \}\
-  .upload-area:hover \{ border-color: var(--blue); background: var(--blue-light); \}\
-  .upload-area p \{ font-size: 13px; color: var(--gray-500); margin-top: 8px; \}\
-  .photo-preview \{ display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; \}\
-  .photo-thumb \{ width: 80px; height: 60px; border-radius: 6px; object-fit: cover; border: 1px solid var(--gray-200); \}\
-\
-  /* \uc0\u9472 \u9472 \u9472  Loading \u9472 \u9472 \u9472  */\
-  .loading \{ text-align: center; padding: 40px; color: var(--gray-500); font-size: 14px; \}\
-  .spinner \{ display: inline-block; width: 24px; height: 24px; border: 3px solid var(--gray-200); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px; \}\
-  @keyframes spin \{ to \{ transform: rotate(360deg); \} \}\
-\
-  .empty-state \{ text-align: center; padding: 48px 20px; color: var(--gray-500); \}\
-  .empty-icon \{ font-size: 48px; margin-bottom: 12px; \}\
-  .empty-state p \{ font-size: 14px; \}\
-  .flex-between \{ display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; \}\
-\
-  /* \uc0\u9472 \u9472 \u9472  Action buttons row \u9472 \u9472 \u9472  */\
-  .action-row \{ display: flex; gap: 8px; \}\
-  .btn-icon \{ padding: 6px 10px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; font-family: var(--font); transition: all 0.2s; \}\
-  .btn-approve \{ background: var(--green-light); color: var(--green); \}\
-  .btn-approve:hover \{ background: #c3ecd0; \}\
-  .btn-reject \{ background: var(--red-light); color: var(--red); \}\
-  .btn-reject:hover \{ background: #f5c0c0; \}\
-  .btn-view \{ background: var(--blue-light); color: var(--blue); \}\
-  .btn-view:hover \{ background: #d0e1fa; \}\
-\
-  .info-row \{ display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--gray-200); font-size: 13px; \}\
-  .info-row:last-child \{ border-bottom: none; \}\
-  .info-label \{ color: var(--gray-500); \}\
-  .info-value \{ font-weight: 500; \}\
-  .tags \{ display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; \}\
-  .tag \{ background: var(--blue-light); color: var(--blue); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; \}\
-  .step-indicator \{ display: flex; align-items: center; gap: 8px; margin-bottom: 24px; \}\
-  .step \{ display: flex; align-items: center; gap: 6px; font-size: 12px; \}\
-  .step-dot \{ width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; \}\
-  .step-dot.done \{ background: var(--blue); color: white; \}\
-  .step-dot.current \{ background: var(--yellow); color: var(--gray-700); \}\
-  .step-dot.upcoming \{ background: var(--gray-200); color: var(--gray-500); \}\
-  .step-line \{ flex: 1; height: 1px; background: var(--gray-200); \}\
-</style>\
-</head>\
-<body>\
-\
-<!-- \uc0\u9552 \u9552 \u9552  AUTH SCREEN \u9552 \u9552 \u9552  -->\
-<div class="auth-screen" id="authScreen">\
-  <div class="auth-logo">\
-    <span>Pippo<span class="go">GO!</span></span>\
-  </div>\
-  <div class="auth-card">\
-    <h2>\uc0\u3648 \u3586 \u3657 \u3634 \u3626 \u3641 \u3656 \u3619 \u3632 \u3610 \u3610 </h2>\
-    <p>\uc0\u3619 \u3632 \u3610 \u3610 \u3592 \u3633 \u3604 \u3585 \u3634 \u3619 \u3626 \u3635 \u3627 \u3619 \u3633 \u3610 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 \u3649 \u3621 \u3632  Admin</p>\
-    <div class="tab-row">\
-      <button class="tab-btn active" onclick="switchAuthTab('hotel')">\uc0\u55356 \u57320  \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 </button>\
-      <button class="tab-btn" onclick="switchAuthTab('admin')">\uc0\u55357 \u57057  Admin</button>\
-    </div>\
-    <div id="errorMsg" class="error-msg" style="display:none"></div>\
-    <div class="field">\
-      <label>\uc0\u3629 \u3637 \u3648 \u3617 \u3621 </label>\
-      <input type="email" id="loginEmail" placeholder="hotel@example.com">\
-    </div>\
-    <div class="field">\
-      <label>\uc0\u3619 \u3627 \u3633 \u3626 \u3612 \u3656 \u3634 \u3609 </label>\
-      <input type="password" id="loginPassword" placeholder="\uc0\u3619 \u3627 \u3633 \u3626 \u3612 \u3656 \u3634 \u3609 ">\
-    </div>\
-    <button class="btn btn-primary" id="loginBtn" onclick="handleLogin()">\uc0\u3648 \u3586 \u3657 \u3634 \u3626 \u3641 \u3656 \u3619 \u3632 \u3610 \u3610 </button>\
-    <p style="text-align:center;font-size:12px;color:var(--gray-500);margin-top:16px">\
-      \uc0\u3621 \u3639 \u3617 \u3619 \u3627 \u3633 \u3626 \u3612 \u3656 \u3634 \u3609 ? \u3605 \u3636 \u3604 \u3605 \u3656 \u3629  Admin \u3607 \u3637 \u3656  support@pippogo.com\
-    </p>\
-  </div>\
-</div>\
-\
-<!-- \uc0\u9552 \u9552 \u9552  MAIN APP \u9552 \u9552 \u9552  -->\
-<div class="app" id="mainApp">\
-  <!-- Topbar -->\
-  <div class="topbar">\
-    <div class="topbar-logo">Pippo<span>GO!</span> <span style="font-size:12px;font-weight:400;opacity:0.7" id="portalLabel">Hotel Portal</span></div>\
-    <div class="topbar-right">\
-      <span class="admin-badge" id="adminBadge" style="display:none">ADMIN</span>\
-      <span class="user-badge" id="userEmail">-</span>\
-      <button class="logout-btn" onclick="handleLogout()">\uc0\u3629 \u3629 \u3585 \u3592 \u3634 \u3585 \u3619 \u3632 \u3610 \u3610 </button>\
-    </div>\
-  </div>\
-\
-  <div style="display:flex;flex:1">\
-    <!-- Sidebar -->\
-    <div class="sidebar">\
-      <!-- Hotel nav -->\
-      <div id="hotelNav">\
-        <div class="nav-section">\uc0\u3650 \u3619 \u3591 \u3649 \u3619 \u3617 </div>\
-        <button class="nav-item active" onclick="goPage('hotelInfo')">\
-          <span class="icon">\uc0\u55356 \u57320 </span> \u3586 \u3657 \u3629 \u3617 \u3641 \u3621 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 \
-        </button>\
-        <button class="nav-item" onclick="goPage('hotelRooms')">\
-          <span class="icon">\uc0\u55357 \u57039 </span> \u3627 \u3657 \u3629 \u3591 \u3614 \u3633 \u3585 \
-        </button>\
-        <button class="nav-item" onclick="goPage('hotelBookings')">\
-          <span class="icon">\uc0\u55357 \u56523 </span> \u3585 \u3634 \u3619 \u3592 \u3629 \u3591 \
-        </button>\
-        <button class="nav-item" onclick="goPage('hotelStatus')">\
-          <span class="icon">\uc0\u55357 \u56522 </span> \u3626 \u3606 \u3634 \u3609 \u3632 \u3585 \u3634 \u3619 \u3626 \u3656 \u3591 \
-        </button>\
-      </div>\
-      <!-- Admin nav -->\
-      <div id="adminNav" style="display:none">\
-        <div class="nav-section">Admin</div>\
-        <button class="nav-item active" onclick="goPage('adminOverview')">\
-          <span class="icon">\uc0\u55357 \u56522 </span> Overview\
-        </button>\
-        <button class="nav-item" onclick="goPage('adminReview')">\
-          <span class="icon">\uc0\u9203 </span> Review <span id="pendingCount" style="background:var(--orange);color:white;border-radius:20px;padding:1px 7px;font-size:10px;margin-left:4px"></span>\
-        </button>\
-        <button class="nav-item" onclick="goPage('adminHotels')">\
-          <span class="icon">\uc0\u55356 \u57320 </span> \u3592 \u3633 \u3604 \u3585 \u3634 \u3619 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 \
-        </button>\
-        <button class="nav-item" onclick="goPage('adminBookings')">\
-          <span class="icon">\uc0\u55357 \u56523 </span> Bookings \u3607 \u3633 \u3657 \u3591 \u3627 \u3617 \u3604 \
-        </button>\
-        <button class="nav-item" onclick="goPage('adminRevenue')">\
-          <span class="icon">\uc0\u55357 \u56496 </span> Revenue\
-        </button>\
-      </div>\
-    </div>\
-\
-    <!-- Main Content -->\
-    <div class="main">\
-\
-      <!-- \uc0\u9472 \u9472 \u9472  HOTEL: \u3586 \u3657 \u3629 \u3617 \u3641 \u3621 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617  \u9472 \u9472 \u9472  -->\
-      <div class="page active" id="page-hotelInfo">\
-        <div class="page-title">\uc0\u3586 \u3657 \u3629 \u3617 \u3641 \u3621 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 </div>\
-        <div class="page-sub">\uc0\u3649 \u3585 \u3657 \u3652 \u3586 \u3586 \u3657 \u3629 \u3617 \u3641 \u3621 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 \u3586 \u3629 \u3591 \u3588 \u3640 \u3603  \'97 \u3592 \u3632 \u3606 \u3641 \u3585 \u3626 \u3656 \u3591  Admin \u3605 \u3619 \u3623 \u3592 \u3626 \u3629 \u3610 \u3585 \u3656 \u3629 \u3609 \u3586 \u3638 \u3657 \u3609 \u3649 \u3629 \u3611 </div>\
-\
-        <div class="step-indicator">\
-          <div class="step"><div class="step-dot current">1</div><span>\uc0\u3649 \u3585 \u3657 \u3652 \u3586 \u3586 \u3657 \u3629 \u3617 \u3641 \u3621 </span></div>\
-          <div class="step-line"></div>\
-          <div class="step"><div class="step-dot upcoming">2</div><span>Admin Review</span></div>\
-          <div class="step-line"></div>\
-          <div class="step"><div class="step-dot upcoming">3</div><span>\uc0\u3586 \u3638 \u3657 \u3609 \u3649 \u3629 \u3611  \u10003 </span></div>\
-        </div>\
-\
-        <div class="card">\
-          <div id="hotelFormMsg"></div>\
-\
-          <div class="form-section">\
-            <div class="form-section-title">\uc0\u55357 \u56525  \u3586 \u3657 \u3629 \u3617 \u3641 \u3621 \u3614 \u3639 \u3657 \u3609 \u3600 \u3634 \u3609 </div>\
-            <div class="field-row">\
-              <div class="field"><label>\uc0\u3594 \u3639 \u3656 \u3629 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617  (\u3616 \u3634 \u3625 \u3634 \u3652 \u3607 \u3618 ) *</label><input type="text" id="hName" placeholder="The Pawsome Resort"></div>\
-              <div class="field"><label>\uc0\u3592 \u3633 \u3591 \u3627 \u3623 \u3633 \u3604  *</label>\
-                <select id="hProvince">\
-                  <option value="">-- \uc0\u3648 \u3621 \u3639 \u3629 \u3585 \u3592 \u3633 \u3591 \u3627 \u3623 \u3633 \u3604  --</option>\
-                  <option>\uc0\u3585 \u3619 \u3640 \u3591 \u3648 \u3607 \u3614 \u3617 \u3627 \u3634 \u3609 \u3588 \u3619 </option><option>\u3648 \u3594 \u3637 \u3618 \u3591 \u3651 \u3627 \u3617 \u3656 </option><option>\u3648 \u3594 \u3637 \u3618 \u3591 \u3619 \u3634 \u3618 </option>\
-                  <option>\uc0\u3586 \u3629 \u3609 \u3649 \u3585 \u3656 \u3609 </option><option>\u3594 \u3621 \u3610 \u3640 \u3619 \u3637 </option><option>\u3609 \u3588 \u3619 \u3619 \u3634 \u3594 \u3626 \u3637 \u3617 \u3634 </option>\
-                  <option>\uc0\u3616 \u3641 \u3648 \u3585 \u3655 \u3605 </option><option>\u3626 \u3640 \u3619 \u3634 \u3625 \u3598 \u3619 \u3660 \u3608 \u3634 \u3609 \u3637 </option><option>\u3585 \u3619 \u3632 \u3610 \u3637 \u3656 </option>\
-                  <option>\uc0\u3614 \u3619 \u3632 \u3609 \u3588 \u3619 \u3624 \u3619 \u3637 \u3629 \u3618 \u3640 \u3608 \u3618 \u3634 </option><option>\u3585 \u3634 \u3597 \u3592 \u3609 \u3610 \u3640 \u3619 \u3637 </option>\
-                </select>\
-              </div>\
-            </div>\
-            <div class="field"><label>\uc0\u3607 \u3637 \u3656 \u3629 \u3618 \u3641 \u3656 \u3648 \u3605 \u3655 \u3617  *</label><input type="text" id="hAddress" placeholder="123 \u3627 \u3617 \u3641 \u3656  5 \u3606 .\u3608 \u3609 \u3632 \u3619 \u3633 \u3594 \u3605 \u3660  \u3611 \u3634 \u3585 \u3594 \u3656 \u3629 \u3591  \u3609 \u3588 \u3619 \u3619 \u3634 \u3594 \u3626 \u3637 \u3617 \u3634  30130"></div>\
-            <div class="field-row">\
-              <div class="field"><label>\uc0\u3648 \u3610 \u3629 \u3619 \u3660 \u3650 \u3607 \u3619 \u3624 \u3633 \u3614 \u3607 \u3660 </label><input type="tel" id="hPhone" placeholder="+66812345678"></div>\
-              <div class="field"><label>Google Maps URL</label><input type="url" id="hMapUrl" placeholder="https://maps.app.goo.gl/..."></div>\
-            </div>\
-            <div class="field"><label>\uc0\u3588 \u3635 \u3629 \u3608 \u3636 \u3610 \u3634 \u3618 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 </label><textarea id="hDesc" placeholder="\u3619 \u3637 \u3626 \u3629 \u3619 \u3660 \u3607 \u3626 \u3640 \u3604 \u3627 \u3619 \u3641 \u3607 \u3656 \u3634 \u3617 \u3585 \u3621 \u3634 \u3591 \u3608 \u3619 \u3619 \u3617 \u3594 \u3634 \u3605 \u3636 ..."></textarea></div>\
-          </div>\
-\
-          <div class="form-section">\
-            <div class="form-section-title">\uc0\u9200  \u3648 \u3623 \u3621 \u3634  Check-in / Check-out</div>\
-            <div class="field-row">\
-              <div class="field"><label>\uc0\u3648 \u3623 \u3621 \u3634  Check-in</label><input type="time" id="hCheckIn" value="14:00"></div>\
-              <div class="field"><label>\uc0\u3648 \u3623 \u3621 \u3634  Check-out</label><input type="time" id="hCheckOut" value="12:00"></div>\
-            </div>\
-            <div class="field"><label>\uc0\u3609 \u3650 \u3618 \u3610 \u3634 \u3618 \u3618 \u3585 \u3648 \u3621 \u3636 \u3585 </label><input type="text" id="hCancel" placeholder="\u3618 \u3585 \u3648 \u3621 \u3636 \u3585 \u3615 \u3619 \u3637 \u3585 \u3656 \u3629 \u3609  7 \u3623 \u3633 \u3609 "></div>\
-          </div>\
-\
-          <div class="form-section">\
-            <div class="form-section-title">\uc0\u55357 \u56382  \u3609 \u3650 \u3618 \u3610 \u3634 \u3618 \u3626 \u3633 \u3605 \u3623 \u3660 \u3648 \u3621 \u3637 \u3657 \u3618 \u3591 </div>\
-            <div class="field-row">\
-              <div class="field"><label>\uc0\u3619 \u3633 \u3610 \u3626 \u3633 \u3605 \u3623 \u3660 \u3648 \u3621 \u3637 \u3657 \u3618 \u3591 \u3611 \u3619 \u3632 \u3648 \u3616 \u3607 </label>\
-                <select id="hPetTypes">\
-                  <option value="dog,cat">\uc0\u3626 \u3640 \u3609 \u3633 \u3586 \u3649 \u3621 \u3632 \u3649 \u3617 \u3623 </option>\
-                  <option value="dog">\uc0\u3626 \u3640 \u3609 \u3633 \u3586 \u3648 \u3607 \u3656 \u3634 \u3609 \u3633 \u3657 \u3609 </option>\
-                  <option value="cat">\uc0\u3649 \u3617 \u3623 \u3648 \u3607 \u3656 \u3634 \u3609 \u3633 \u3657 \u3609 </option>\
-                </select>\
-              </div>\
-              <div class="field"><label>\uc0\u3609 \u3657 \u3635 \u3627 \u3609 \u3633 \u3585 \u3626 \u3641 \u3591 \u3626 \u3640 \u3604  (\u3585 \u3585 .) \'97 0 = \u3652 \u3617 \u3656 \u3592 \u3635 \u3585 \u3633 \u3604 </label><input type="number" id="hMaxWeight" value="0" min="0"></div>\
-            </div>\
-            <div class="field-row">\
-              <div class="field"><label>\uc0\u3592 \u3635 \u3609 \u3623 \u3609 \u3626 \u3633 \u3605 \u3623 \u3660 \u3626 \u3641 \u3591 \u3626 \u3640 \u3604 /\u3627 \u3657 \u3629 \u3591 </label><input type="number" id="hMaxPets" value="2" min="1"></div>\
-              <div class="field"><label>\uc0\u3588 \u3656 \u3634 \u3626 \u3633 \u3605 \u3623 \u3660 \u3648 \u3621 \u3637 \u3657 \u3618 \u3591  (\u3647 /\u3605 \u3633 \u3623 /\u3588 \u3639 \u3609 ) \'97 0 = \u3615 \u3619 \u3637 </label><input type="number" id="hPetFee" value="0" min="0"></div>\
-            </div>\
-            <div class="field-row">\
-              <div class="field"><label>\uc0\u3617 \u3633 \u3604 \u3592 \u3635 \u3626 \u3633 \u3605 \u3623 \u3660 \u3648 \u3621 \u3637 \u3657 \u3618 \u3591  (\u3647 )</label><input type="number" id="hPetDeposit" value="0" min="0"></div>\
-              <div class="field"><label>\uc0\u3588 \u3656 \u3634 \u3612 \u3641 \u3657 \u3648 \u3586 \u3657 \u3634 \u3614 \u3633 \u3585 \u3648 \u3614 \u3636 \u3656 \u3617  (\u3647 /\u3588 \u3609 /\u3588 \u3639 \u3609 )</label><input type="number" id="hExtraGuest" value="500" min="0"></div>\
-            </div>\
-          </div>\
-\
-          <div class="form-section">\
-            <div class="form-section-title">\uc0\u10024  \u3626 \u3636 \u3656 \u3591 \u3629 \u3635 \u3609 \u3623 \u3618 \u3588 \u3623 \u3634 \u3617 \u3626 \u3632 \u3604 \u3623 \u3585 </div>\
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">\
-              <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" value="pool" class="amenity-cb"> \uc0\u55356 \u57290  \u3626 \u3619 \u3632 \u3623 \u3656 \u3634 \u3618 \u3609 \u3657 \u3635 </label>\
-              <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" value="breakfast" class="amenity-cb"> \uc0\u55356 \u57203  \u3629 \u3634 \u3627 \u3634 \u3619 \u3648 \u3594 \u3657 \u3634 </label>\
-              <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" value="wifi" class="amenity-cb"> \uc0\u55357 \u56566  WiFi \u3615 \u3619 \u3637 </label>\
-              <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" value="parking" class="amenity-cb"> \uc0\u55357 \u56983  \u3607 \u3637 \u3656 \u3592 \u3629 \u3604 \u3619 \u3606 </label>\
-              <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" value="pet_area" class="amenity-cb"> \uc0\u55357 \u56382  \u3614 \u3639 \u3657 \u3609 \u3607 \u3637 \u3656 \u3626 \u3633 \u3605 \u3623 \u3660 </label>\
-              <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" value="garden" class="amenity-cb"> \uc0\u55356 \u57151  \u3626 \u3623 \u3609 </label>\
-              <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" value="pet_shower" class="amenity-cb"> \uc0\u55357 \u57023  \u3629 \u3634 \u3610 \u3609 \u3657 \u3635 \u3626 \u3633 \u3605 \u3623 \u3660 </label>\
-              <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" value="pet_bed" class="amenity-cb"> \uc0\u55357 \u57039  \u3607 \u3637 \u3656 \u3609 \u3629 \u3609 \u3626 \u3633 \u3605 \u3623 \u3660 </label>\
-              <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" value="private_beach" class="amenity-cb"> \uc0\u55356 \u57302  \u3594 \u3634 \u3618 \u3627 \u3634 \u3604 \u3626 \u3656 \u3623 \u3609 \u3605 \u3633 \u3623 </label>\
-              <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" value="bbq" class="amenity-cb"> \uc0\u55357 \u56613  BBQ</label>\
-            </div>\
-          </div>\
-\
-          <div class="form-section">\
-            <div class="form-section-title">\uc0\u55357 \u56568  \u3619 \u3641 \u3611 \u3616 \u3634 \u3614 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 </div>\
-            <div class="field-row">\
-              <div class="field"><label>URL \uc0\u3619 \u3641 \u3611 \u3616 \u3634 \u3614  1 *</label><input type="url" id="hPhoto1" placeholder="https://..."></div>\
-              <div class="field"><label>URL \uc0\u3619 \u3641 \u3611 \u3616 \u3634 \u3614  2</label><input type="url" id="hPhoto2" placeholder="https://..."></div>\
-            </div>\
-            <div class="field"><label>URL \uc0\u3619 \u3641 \u3611 \u3616 \u3634 \u3614  3</label><input type="url" id="hPhoto3" placeholder="https://..."></div>\
-          </div>\
-\
-          <button class="btn btn-primary" onclick="submitHotelUpdate()">\uc0\u55357 \u56548  \u3626 \u3656 \u3591 \u3586 \u3657 \u3629 \u3617 \u3641 \u3621 \u3651 \u3627 \u3657  Admin \u3605 \u3619 \u3623 \u3592 \u3626 \u3629 \u3610 </button>\
-        </div>\
-      </div>\
-\
-      <!-- \uc0\u9472 \u9472 \u9472  HOTEL: \u3627 \u3657 \u3629 \u3591 \u3614 \u3633 \u3585  \u9472 \u9472 \u9472  -->\
-      <div class="page" id="page-hotelRooms">\
-        <div class="flex-between">\
-          <div>\
-            <div class="page-title">\uc0\u3627 \u3657 \u3629 \u3591 \u3614 \u3633 \u3585 </div>\
-            <div class="page-sub">\uc0\u3592 \u3633 \u3604 \u3585 \u3634 \u3619 \u3627 \u3657 \u3629 \u3591 \u3614 \u3633 \u3585 \u3649 \u3621 \u3632 \u3619 \u3634 \u3588 \u3634 </div>\
-          </div>\
-          <button class="btn btn-primary btn-sm" onclick="showAddRoom()">+ \uc0\u3648 \u3614 \u3636 \u3656 \u3617 \u3627 \u3657 \u3629 \u3591 </button>\
-        </div>\
-        <div id="roomList"><div class="loading"><div class="spinner"></div><br>\uc0\u3585 \u3635 \u3621 \u3633 \u3591 \u3650 \u3627 \u3621 \u3604 ...</div></div>\
-      </div>\
-\
-      <!-- \uc0\u9472 \u9472 \u9472  HOTEL: \u3585 \u3634 \u3619 \u3592 \u3629 \u3591  \u9472 \u9472 \u9472  -->\
-      <div class="page" id="page-hotelBookings">\
-        <div class="page-title">\uc0\u3585 \u3634 \u3619 \u3592 \u3629 \u3591 \u3586 \u3629 \u3591 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 \u3593 \u3633 \u3609 </div>\
-        <div class="page-sub">\uc0\u3619 \u3634 \u3618 \u3585 \u3634 \u3619 \u3592 \u3629 \u3591 \u3592 \u3634 \u3585 \u3649 \u3629 \u3611  PippoGO</div>\
-        <div id="hotelBookingList"><div class="loading"><div class="spinner"></div><br>\uc0\u3585 \u3635 \u3621 \u3633 \u3591 \u3650 \u3627 \u3621 \u3604 ...</div></div>\
-      </div>\
-\
-      <!-- \uc0\u9472 \u9472 \u9472  HOTEL: \u3626 \u3606 \u3634 \u3609 \u3632  \u9472 \u9472 \u9472  -->\
-      <div class="page" id="page-hotelStatus">\
-        <div class="page-title">\uc0\u3626 \u3606 \u3634 \u3609 \u3632 \u3585 \u3634 \u3619 \u3626 \u3656 \u3591 \u3586 \u3657 \u3629 \u3617 \u3641 \u3621 </div>\
-        <div class="page-sub">\uc0\u3605 \u3636 \u3604 \u3605 \u3634 \u3617 \u3585 \u3634 \u3619  approve \u3592 \u3634 \u3585  Admin</div>\
-        <div id="statusList"><div class="loading"><div class="spinner"></div><br>\uc0\u3585 \u3635 \u3621 \u3633 \u3591 \u3650 \u3627 \u3621 \u3604 ...</div></div>\
-      </div>\
-\
-      <!-- \uc0\u9472 \u9472 \u9472  ADMIN: Overview \u9472 \u9472 \u9472  -->\
-      <div class="page" id="page-adminOverview">\
-        <div class="page-title">Admin Overview</div>\
-        <div class="page-sub">\uc0\u3616 \u3634 \u3614 \u3619 \u3623 \u3617 \u3619 \u3632 \u3610 \u3610  PippoGO</div>\
-        <div class="stat-grid">\
-          <div class="stat-card"><div class="stat-label">\uc0\u3650 \u3619 \u3591 \u3649 \u3619 \u3617 \u3607 \u3633 \u3657 \u3591 \u3627 \u3617 \u3604 </div><div class="stat-value blue" id="statHotels">-</div></div>\
-          <div class="stat-card"><div class="stat-label">\uc0\u3619 \u3629  Review</div><div class="stat-value orange" id="statPending">-</div></div>\
-          <div class="stat-card"><div class="stat-label">Booking \uc0\u3623 \u3633 \u3609 \u3609 \u3637 \u3657 </div><div class="stat-value green" id="statBookingsToday">-</div></div>\
-          <div class="stat-card"><div class="stat-label">Revenue \uc0\u3619 \u3623 \u3617  (\u3647 )</div><div class="stat-value" id="statRevenue">-</div></div>\
-        </div>\
-        <div class="two-col">\
-          <div class="card">\
-            <div class="card-title">\uc0\u9203  \u3619 \u3629  Review \u3621 \u3656 \u3634 \u3626 \u3640 \u3604 </div>\
-            <div id="recentPending"><div class="loading">\uc0\u3585 \u3635 \u3621 \u3633 \u3591 \u3650 \u3627 \u3621 \u3604 ...</div></div>\
-          </div>\
-          <div class="card">\
-            <div class="card-title">\uc0\u55357 \u56523  Booking \u3621 \u3656 \u3634 \u3626 \u3640 \u3604 </div>\
-            <div id="recentBookings"><div class="loading">\uc0\u3585 \u3635 \u3621 \u3633 \u3591 \u3650 \u3627 \u3621 \u3604 ...</div></div>\
-          </div>\
-        </div>\
-      </div>\
-\
-      <!-- \uc0\u9472 \u9472 \u9472  ADMIN: Review \u9472 \u9472 \u9472  -->\
-      <div class="page" id="page-adminReview">\
-        <div class="page-title">Review \uc0\u3586 \u3657 \u3629 \u3617 \u3641 \u3621 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 </div>\
-        <div class="page-sub">\uc0\u3605 \u3619 \u3623 \u3592 \u3626 \u3629 \u3610 \u3649 \u3621 \u3632  Approve/Reject \u3586 \u3657 \u3629 \u3617 \u3641 \u3621 \u3607 \u3637 \u3656 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 \u3626 \u3656 \u3591 \u3617 \u3634 </div>\
-        <div id="reviewList"><div class="loading"><div class="spinner"></div><br>\uc0\u3585 \u3635 \u3621 \u3633 \u3591 \u3650 \u3627 \u3621 \u3604 ...</div></div>\
-      </div>\
-\
-      <!-- \uc0\u9472 \u9472 \u9472  ADMIN: Hotels \u9472 \u9472 \u9472  -->\
-      <div class="page" id="page-adminHotels">\
-        <div class="flex-between">\
-          <div>\
-            <div class="page-title">\uc0\u3592 \u3633 \u3604 \u3585 \u3634 \u3619 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 </div>\
-            <div class="page-sub">\uc0\u3648 \u3614 \u3636 \u3656 \u3617 /\u3621 \u3610 /\u3649 \u3585 \u3657 \u3652 \u3586 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 \u3651 \u3609 \u3619 \u3632 \u3610 \u3610 </div>\
-          </div>\
-          <button class="btn btn-primary btn-sm" onclick="showAddHotelAccount()">+ \uc0\u3648 \u3614 \u3636 \u3656 \u3617 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 \u3651 \u3627 \u3617 \u3656 </button>\
-        </div>\
-        <div id="adminHotelList"><div class="loading"><div class="spinner"></div><br>\uc0\u3585 \u3635 \u3621 \u3633 \u3591 \u3650 \u3627 \u3621 \u3604 ...</div></div>\
-      </div>\
-\
-      <!-- \uc0\u9472 \u9472 \u9472  ADMIN: Bookings \u9472 \u9472 \u9472  -->\
-      <div class="page" id="page-adminBookings">\
-        <div class="page-title">Bookings \uc0\u3607 \u3633 \u3657 \u3591 \u3627 \u3617 \u3604 </div>\
-        <div class="page-sub">\uc0\u3585 \u3634 \u3619 \u3592 \u3629 \u3591 \u3592 \u3634 \u3585 \u3649 \u3629 \u3611  PippoGO \u3607 \u3633 \u3657 \u3591 \u3619 \u3632 \u3610 \u3610 </div>\
-        <div id="adminBookingList"><div class="loading"><div class="spinner"></div><br>\uc0\u3585 \u3635 \u3621 \u3633 \u3591 \u3650 \u3627 \u3621 \u3604 ...</div></div>\
-      </div>\
-\
-      <!-- \uc0\u9472 \u9472 \u9472  ADMIN: Revenue \u9472 \u9472 \u9472  -->\
-      <div class="page" id="page-adminRevenue">\
-        <div class="page-title">Revenue</div>\
-        <div class="page-sub">\uc0\u3619 \u3634 \u3618 \u3652 \u3604 \u3657 \u3592 \u3634 \u3585 \u3585 \u3634 \u3619 \u3592 \u3629 \u3591 \u3612 \u3656 \u3634 \u3609 \u3649 \u3629 \u3611  PippoGO</div>\
-        <div class="stat-grid">\
-          <div class="stat-card"><div class="stat-label">\uc0\u3619 \u3634 \u3618 \u3652 \u3604 \u3657 \u3623 \u3633 \u3609 \u3609 \u3637 \u3657  (\u3647 )</div><div class="stat-value blue" id="revToday">-</div></div>\
-          <div class="stat-card"><div class="stat-label">\uc0\u3619 \u3634 \u3618 \u3652 \u3604 \u3657 \u3648 \u3604 \u3639 \u3629 \u3609 \u3609 \u3637 \u3657  (\u3647 )</div><div class="stat-value green" id="revMonth">-</div></div>\
-          <div class="stat-card"><div class="stat-label">\uc0\u3619 \u3634 \u3618 \u3652 \u3604 \u3657 \u3619 \u3623 \u3617  (\u3647 )</div><div class="stat-value" id="revTotal">-</div></div>\
-          <div class="stat-card"><div class="stat-label">Booking \uc0\u3607 \u3637 \u3656 \u3626 \u3635 \u3648 \u3619 \u3655 \u3592 </div><div class="stat-value" id="revCount">-</div></div>\
-        </div>\
-        <div class="card">\
-          <div class="card-title">\uc0\u55357 \u56496  \u3619 \u3634 \u3618 \u3652 \u3604 \u3657 \u3649 \u3618 \u3585 \u3605 \u3634 \u3617 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 </div>\
-          <div id="revenueByHotel"><div class="loading">\uc0\u3585 \u3635 \u3621 \u3633 \u3591 \u3650 \u3627 \u3621 \u3604 ...</div></div>\
-        </div>\
-      </div>\
-\
-    </div>\
-  </div>\
-</div>\
-\
-<!-- \uc0\u9472 \u9472 \u9472  Modal: Review \u9472 \u9472 \u9472  -->\
-<div class="modal-overlay" id="reviewModal">\
-  <div class="modal">\
-    <div class="modal-header">\
-      <h3>\uc0\u55357 \u56523  \u3605 \u3619 \u3623 \u3592 \u3626 \u3629 \u3610 \u3586 \u3657 \u3629 \u3617 \u3641 \u3621 </h3>\
-      <button class="modal-close" onclick="closeModal('reviewModal')">\uc0\u10005 </button>\
-    </div>\
-    <div class="modal-body" id="reviewModalBody"></div>\
-    <div class="modal-footer">\
-      <button class="btn btn-danger btn-sm" onclick="rejectUpdate()">\uc0\u10005  Reject</button>\
-      <button class="btn btn-success btn-sm" onclick="approveUpdate()">\uc0\u10003  Approve & \u3586 \u3638 \u3657 \u3609 \u3649 \u3629 \u3611 </button>\
-    </div>\
-  </div>\
-</div>\
-\
-<!-- \uc0\u9472 \u9472 \u9472  Modal: Add Hotel Account \u9472 \u9472 \u9472  -->\
-<div class="modal-overlay" id="addHotelModal">\
-  <div class="modal">\
-    <div class="modal-header">\
-      <h3>\uc0\u55356 \u57320  \u3648 \u3614 \u3636 \u3656 \u3617 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 \u3651 \u3627 \u3617 \u3656 </h3>\
-      <button class="modal-close" onclick="closeModal('addHotelModal')">\uc0\u10005 </button>\
-    </div>\
-    <div class="modal-body">\
-      <div id="addHotelMsg"></div>\
-      <div class="field"><label>\uc0\u3594 \u3639 \u3656 \u3629 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617  *</label><input type="text" id="newHotelName" placeholder="The Pawsome Resort"></div>\
-      <div class="field"><label>\uc0\u3629 \u3637 \u3648 \u3617 \u3621  Login \u3626 \u3635 \u3627 \u3619 \u3633 \u3610 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617  *</label><input type="email" id="newHotelEmail" placeholder="manager@pawsome.com"></div>\
-      <div class="field"><label>\uc0\u3619 \u3627 \u3633 \u3626 \u3612 \u3656 \u3634 \u3609 \u3648 \u3619 \u3636 \u3656 \u3617 \u3605 \u3657 \u3609  *</label><input type="password" id="newHotelPass" placeholder="\u3629 \u3618 \u3656 \u3634 \u3591 \u3609 \u3657 \u3629 \u3618  8 \u3605 \u3633 \u3623 \u3629 \u3633 \u3585 \u3625 \u3619 "></div>\
-      <div class="field"><label>Hotel ID (Firestore doc ID) *</label><input type="text" id="newHotelId" placeholder="hotel_001"></div>\
-      <p style="font-size:12px;color:var(--gray-500);margin-top:8px">\uc0\u3650 \u3619 \u3591 \u3649 \u3619 \u3617 \u3592 \u3632 \u3652 \u3604 \u3657 \u3619 \u3633 \u3610 \u3629 \u3637 \u3648 \u3617 \u3621 \u3614 \u3619 \u3657 \u3629 \u3617  login \u3648 \u3614 \u3639 \u3656 \u3629 \u3648 \u3586 \u3657 \u3634 \u3649 \u3585 \u3657 \u3652 \u3586 \u3586 \u3657 \u3629 \u3617 \u3641 \u3621 \u3605 \u3633 \u3623 \u3648 \u3629 \u3591 </p>\
-    </div>\
-    <div class="modal-footer">\
-      <button class="btn btn-primary btn-sm" onclick="createHotelAccount()">\uc0\u3626 \u3619 \u3657 \u3634 \u3591  Account</button>\
-    </div>\
-  </div>\
-</div>\
-\
-<!-- \uc0\u9472 \u9472 \u9472  Modal: Add Room \u9472 \u9472 \u9472  -->\
-<div class="modal-overlay" id="addRoomModal">\
-  <div class="modal">\
-    <div class="modal-header">\
-      <h3>\uc0\u55357 \u57039  \u3648 \u3614 \u3636 \u3656 \u3617 /\u3649 \u3585 \u3657 \u3652 \u3586 \u3627 \u3657 \u3629 \u3591 \u3614 \u3633 \u3585 </h3>\
-      <button class="modal-close" onclick="closeModal('addRoomModal')">\uc0\u10005 </button>\
-    </div>\
-    <div class="modal-body">\
-      <div id="addRoomMsg"></div>\
-      <div class="field-row">\
-        <div class="field"><label>\uc0\u3594 \u3639 \u3656 \u3629 \u3627 \u3657 \u3629 \u3591  (EN)</label><input type="text" id="rName" placeholder="Deluxe Pet Suite"></div>\
-        <div class="field"><label>\uc0\u3594 \u3639 \u3656 \u3629 \u3627 \u3657 \u3629 \u3591  (TH)</label><input type="text" id="rNameTh" placeholder="\u3627 \u3657 \u3629 \u3591 \u3604 \u3637 \u3621 \u3633 \u3585 \u3595 \u3660 \u3626 \u3635 \u3627 \u3619 \u3633 \u3610 \u3626 \u3633 \u3605 \u3623 \u3660 \u3648 \u3621 \u3637 \u3657 \u3618 \u3591 "></div>\
-      </div>\
-      <div class="field-row">\
-        <div class="field"><label>\uc0\u3619 \u3634 \u3588 \u3634  Weekday (\u3647 )</label><input type="number" id="rPriceWd" placeholder="2000" min="0"></div>\
-        <div class="field"><label>\uc0\u3619 \u3634 \u3588 \u3634  Weekend (\u3647 )</label><input type="number" id="rPriceWe" placeholder="2500" min="0"></div>\
-      </div>\
-      <div class="field-row">\
-        <div class="field"><label>\uc0\u3619 \u3633 \u3610 \u3652 \u3604 \u3657  (\u3588 \u3609 )</label><input type="number" id="rMaxGuests" value="2" min="1"></div>\
-        <div class="field"><label>\uc0\u3619 \u3633 \u3610 \u3626 \u3633 \u3605 \u3623 \u3660  (\u3605 \u3633 \u3623 )</label><input type="number" id="rMaxPets" value="1" min="0"></div>\
-      </div>\
-      <div class="field-row">\
-        <div class="field"><label>\uc0\u3586 \u3609 \u3634 \u3604 \u3627 \u3657 \u3629 \u3591  (\u3605 \u3619 .\u3617 .)</label><input type="number" id="rSize" value="0" min="0"></div>\
-        <div class="field"><label>\uc0\u3611 \u3619 \u3632 \u3648 \u3616 \u3607 \u3648 \u3605 \u3637 \u3618 \u3591 </label><input type="text" id="rBed" placeholder="King Size"></div>\
-      </div>\
-      <div class="field"><label>\uc0\u3588 \u3635 \u3629 \u3608 \u3636 \u3610 \u3634 \u3618 \u3627 \u3657 \u3629 \u3591 </label><textarea id="rDesc" placeholder="\u3627 \u3657 \u3629 \u3591 \u3614 \u3633 \u3585 \u3626 \u3640 \u3604 \u3627 \u3619 \u3641 \u3614 \u3619 \u3657 \u3629 \u3617 ..."></textarea></div>\
-      <div class="field"><label>URL \uc0\u3619 \u3641 \u3611 \u3627 \u3657 \u3629 \u3591 </label><input type="url" id="rPhoto" placeholder="https://..."></div>\
-    </div>\
-    <div class="modal-footer">\
-      <button class="btn btn-primary btn-sm" onclick="saveRoom()">\uc0\u3610 \u3633 \u3609 \u3607 \u3638 \u3585 \u3627 \u3657 \u3629 \u3591 </button>\
-    </div>\
-  </div>\
-</div>\
-\
-<script>\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// FIREBASE CONFIG \'97 \uc0\u3649 \u3607 \u3609 \u3607 \u3637 \u3656 \u3604 \u3657 \u3623 \u3618 \u3586 \u3629 \u3591 \u3588 \u3640 \u3603 \
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional\
-const firebaseConfig = \{\
-  apiKey: "AIzaSyD88Om-vKnpvX2RUSVifrSH_EA0gBcrHOA",\
-  authDomain: "pippo-go.firebaseapp.com",\
-  projectId: "pippo-go",\
-  storageBucket: "pippo-go.firebasestorage.app",\
-  messagingSenderId: "828784788403",\
-  appId: "1:828784788403:web:2445bfb05c0f60678c41c6",\
-  measurementId: "G-Y04F9V4B1G"\
-\};\
-\
-firebase.initializeApp(firebaseConfig);\
-const auth = firebase.auth();\
-const db = firebase.firestore();\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// STATE\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-let currentUser = null;\
-let currentRole = null; // 'hotel' | 'admin'\
-let currentHotelId = null;\
-let currentReviewId = null;\
-let currentReviewData = null;\
-\
-// Admin emails \'97 \uc0\u3648 \u3614 \u3636 \u3656 \u3617 \u3652 \u3604 \u3657 \u3627 \u3621 \u3634 \u3618 \u3588 \u3609 \
-const ADMIN_EMAILS = ['admin@pippogo.com', 'seth@pippogo.com\'92,\'92yok-chinn@hotmail.com\'92];\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// AUTH\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-function switchAuthTab(tab) \{\
-  document.querySelectorAll('.tab-btn').forEach((b, i) => \{\
-    b.classList.toggle('active', (tab === 'hotel' && i === 0) || (tab === 'admin' && i === 1));\
-  \});\
-\}\
-\
-async function handleLogin() \{\
-  const email = document.getElementById('loginEmail').value.trim();\
-  const pass = document.getElementById('loginPassword').value;\
-  const btn = document.getElementById('loginBtn');\
-  const errEl = document.getElementById('errorMsg');\
-  errEl.style.display = 'none';\
-  if (!email || !pass) \{ showError('\uc0\u3585 \u3619 \u3640 \u3603 \u3634 \u3585 \u3619 \u3629 \u3585 \u3629 \u3637 \u3648 \u3617 \u3621 \u3649 \u3621 \u3632 \u3619 \u3627 \u3633 \u3626 \u3612 \u3656 \u3634 \u3609 '); return; \}\
-  btn.disabled = true; btn.textContent = '\uc0\u3585 \u3635 \u3621 \u3633 \u3591 \u3648 \u3586 \u3657 \u3634 \u3626 \u3641 \u3656 \u3619 \u3632 \u3610 \u3610 ...';\
-  try \{\
-    await auth.signInWithEmailAndPassword(email, pass);\
-  \} catch (e) \{\
-    showError('\uc0\u3629 \u3637 \u3648 \u3617 \u3621 \u3627 \u3619 \u3639 \u3629 \u3619 \u3627 \u3633 \u3626 \u3612 \u3656 \u3634 \u3609 \u3652 \u3617 \u3656 \u3606 \u3641 \u3585 \u3605 \u3657 \u3629 \u3591 ');\
-    btn.disabled = false; btn.textContent = '\uc0\u3648 \u3586 \u3657 \u3634 \u3626 \u3641 \u3656 \u3619 \u3632 \u3610 \u3610 ';\
-  \}\
-\}\
-\
-function showError(msg) \{\
-  const el = document.getElementById('errorMsg');\
-  el.textContent = msg; el.style.display = 'block';\
-\}\
-\
-async function handleLogout() \{\
-  await auth.signOut();\
-  document.getElementById('mainApp').classList.remove('visible');\
-  document.getElementById('authScreen').style.display = 'flex';\
-\}\
-\
-auth.onAuthStateChanged(async (user) => \{\
-  if (!user) \{\
-    document.getElementById('authScreen').style.display = 'flex';\
-    document.getElementById('mainApp').classList.remove('visible');\
-    return;\
-  \}\
-  currentUser = user;\
-  document.getElementById('authScreen').style.display = 'none';\
-  document.getElementById('mainApp').classList.add('visible');\
-  document.getElementById('userEmail').textContent = user.email;\
-\
-  if (ADMIN_EMAILS.includes(user.email)) \{\
-    // Admin mode\
-    currentRole = 'admin';\
-    document.getElementById('adminBadge').style.display = 'inline';\
-    document.getElementById('portalLabel').textContent = 'Admin Dashboard';\
-    document.getElementById('hotelNav').style.display = 'none';\
-    document.getElementById('adminNav').style.display = 'block';\
-    goPage('adminOverview');\
-    loadAdminData();\
-  \} else \{\
-    // Hotel mode\
-    currentRole = 'hotel';\
-    document.getElementById('adminBadge').style.display = 'none';\
-    document.getElementById('portalLabel').textContent = 'Hotel Portal';\
-    document.getElementById('hotelNav').style.display = 'block';\
-    document.getElementById('adminNav').style.display = 'none';\
-    // Find hotel account\
-    const snap = await db.collection('hotel_accounts').where('email', '==', user.email).limit(1).get();\
-    if (!snap.empty) \{\
-      const acc = snap.docs[0];\
-      currentHotelId = acc.data().hotelId;\
-      loadHotelForm();\
-    \}\
-    goPage('hotelInfo');\
-  \}\
-\});\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// NAVIGATION\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-function goPage(pageId) \{\
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));\
-  document.getElementById('page-' + pageId).classList.add('active');\
-  document.querySelectorAll('.nav-item').forEach(n => \{\
-    n.classList.toggle('active', n.getAttribute('onclick')?.includes(pageId));\
-  \});\
-  // Lazy load\
-  if (pageId === 'hotelRooms') loadRooms();\
-  if (pageId === 'hotelBookings') loadHotelBookings();\
-  if (pageId === 'hotelStatus') loadHotelStatus();\
-  if (pageId === 'adminReview') loadReviewList();\
-  if (pageId === 'adminHotels') loadAdminHotels();\
-  if (pageId === 'adminBookings') loadAdminBookings();\
-  if (pageId === 'adminRevenue') loadRevenue();\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// HOTEL: Load & Submit Info\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-async function loadHotelForm() \{\
-  if (!currentHotelId) return;\
-  try \{\
-    const doc = await db.collection('places').doc(currentHotelId).get();\
-    if (!doc.exists) return;\
-    const d = doc.data();\
-    document.getElementById('hName').value = d.name || '';\
-    document.getElementById('hProvince').value = d.province || '';\
-    document.getElementById('hAddress').value = d.address || '';\
-    document.getElementById('hPhone').value = d.phone || '';\
-    document.getElementById('hMapUrl').value = d.googleMapUrl || '';\
-    document.getElementById('hDesc').value = d.description || '';\
-    document.getElementById('hCheckIn').value = d.checkInTime || '14:00';\
-    document.getElementById('hCheckOut').value = d.checkOutTime || '12:00';\
-    document.getElementById('hCancel').value = d.cancellationPolicy || '';\
-    document.getElementById('hPetTypes').value = d.allowedPetTypes || 'dog,cat';\
-    document.getElementById('hMaxWeight').value = d.maxPetWeight || '0';\
-    document.getElementById('hMaxPets').value = d.maxPetCount || '2';\
-    document.getElementById('hPetFee').value = d.petFeePerNight || '0';\
-    document.getElementById('hPetDeposit').value = d.petDeposit || '0';\
-    document.getElementById('hExtraGuest').value = d.extraGuestFeePerNight || '500';\
-    document.getElementById('hPhoto1').value = d.photo1 || '';\
-    document.getElementById('hPhoto2').value = d.photo2 || '';\
-    document.getElementById('hPhoto3').value = d.photo3 || '';\
-    const amenities = (d.amenities || '').split(',').map(a => a.trim());\
-    document.querySelectorAll('.amenity-cb').forEach(cb => \{\
-      cb.checked = amenities.includes(cb.value);\
-    \});\
-  \} catch(e) \{ console.error(e); \}\
-\}\
-\
-async function submitHotelUpdate() \{\
-  const msgEl = document.getElementById('hotelFormMsg');\
-  msgEl.innerHTML = '';\
-  const amenities = Array.from(document.querySelectorAll('.amenity-cb:checked')).map(c => c.value).join(',');\
-  const data = \{\
-    hotelId: currentHotelId,\
-    hotelEmail: currentUser.email,\
-    submittedAt: firebase.firestore.FieldValue.serverTimestamp(),\
-    status: 'pending',\
-    data: \{\
-      name: document.getElementById('hName').value,\
-      province: document.getElementById('hProvince').value,\
-      address: document.getElementById('hAddress').value,\
-      phone: document.getElementById('hPhone').value,\
-      googleMapUrl: document.getElementById('hMapUrl').value,\
-      description: document.getElementById('hDesc').value,\
-      checkInTime: document.getElementById('hCheckIn').value,\
-      checkOutTime: document.getElementById('hCheckOut').value,\
-      cancellationPolicy: document.getElementById('hCancel').value,\
-      allowedPetTypes: document.getElementById('hPetTypes').value,\
-      maxPetWeight: document.getElementById('hMaxWeight').value,\
-      maxPetCount: document.getElementById('hMaxPets').value,\
-      petFeePerNight: document.getElementById('hPetFee').value,\
-      petDeposit: document.getElementById('hPetDeposit').value,\
-      extraGuestFeePerNight: document.getElementById('hExtraGuest').value,\
-      photo1: document.getElementById('hPhoto1').value,\
-      photo2: document.getElementById('hPhoto2').value,\
-      photo3: document.getElementById('hPhoto3').value,\
-      amenities: amenities,\
-      category: 'hotel'\
-    \}\
-  \};\
-  if (!data.data.name || !data.data.province) \{\
-    msgEl.innerHTML = '<div class="error-msg">\uc0\u3585 \u3619 \u3640 \u3603 \u3634 \u3585 \u3619 \u3629 \u3585 \u3594 \u3639 \u3656 \u3629 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 \u3649 \u3621 \u3632 \u3592 \u3633 \u3591 \u3627 \u3623 \u3633 \u3604 </div>';\
-    return;\
-  \}\
-  try \{\
-    await db.collection('pending_updates').add(data);\
-    msgEl.innerHTML = '<div class="success-msg">\uc0\u9989  \u3626 \u3656 \u3591 \u3586 \u3657 \u3629 \u3617 \u3641 \u3621 \u3626 \u3635 \u3648 \u3619 \u3655 \u3592 ! Admin \u3592 \u3632 \u3605 \u3619 \u3623 \u3592 \u3626 \u3629 \u3610 \u3649 \u3621 \u3632 \u3649 \u3592 \u3657 \u3591 \u3612 \u3621 \u3616 \u3634 \u3618 \u3651 \u3609  24 \u3594 \u3617 .</div>';\
-    window.scrollTo(0, 0);\
-  \} catch(e) \{\
-    msgEl.innerHTML = '<div class="error-msg">\uc0\u3648 \u3585 \u3636 \u3604 \u3586 \u3657 \u3629 \u3612 \u3636 \u3604 \u3614 \u3621 \u3634 \u3604 : ' + e.message + '</div>';\
-  \}\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// HOTEL: Rooms\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-async function loadRooms() \{\
-  const el = document.getElementById('roomList');\
-  if (!currentHotelId) \{ el.innerHTML = '<div class="empty-state"><div class="empty-icon">\uc0\u55357 \u57039 </div><p>\u3652 \u3617 \u3656 \u3614 \u3610 \u3586 \u3657 \u3629 \u3617 \u3641 \u3621  hotel account</p></div>'; return; \}\
-  el.innerHTML = '<div class="loading"><div class="spinner"></div><br>\uc0\u3585 \u3635 \u3621 \u3633 \u3591 \u3650 \u3627 \u3621 \u3604 ...</div>';\
-  const snap = await db.collection('places').where('category', '==', 'hotel_room').where('hotel_id', '==', currentHotelId).get();\
-  if (snap.empty) \{\
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">\uc0\u55357 \u57039 </div><p>\u3618 \u3633 \u3591 \u3652 \u3617 \u3656 \u3617 \u3637 \u3627 \u3657 \u3629 \u3591 \u3614 \u3633 \u3585  \u3585 \u3604  "+ \u3648 \u3614 \u3636 \u3656 \u3617 \u3627 \u3657 \u3629 \u3591 " \u3648 \u3614 \u3639 \u3656 \u3629 \u3648 \u3619 \u3636 \u3656 \u3617 \u3605 \u3657 \u3609 </p></div>';\
-    return;\
-  \}\
-  el.innerHTML = '<div class="card"><table><thead><tr><th>\uc0\u3594 \u3639 \u3656 \u3629 \u3627 \u3657 \u3629 \u3591 </th><th>\u3619 \u3634 \u3588 \u3634  Weekday</th><th>\u3619 \u3634 \u3588 \u3634  Weekend</th><th>\u3619 \u3633 \u3610 \u3652 \u3604 \u3657 </th><th>\u3626 \u3633 \u3605 \u3623 \u3660 </th><th></th></tr></thead><tbody id="roomTbody"></tbody></table></div>';\
-  const tbody = document.getElementById('roomTbody');\
-  snap.docs.forEach(doc => \{\
-    const d = doc.data();\
-    tbody.innerHTML += `<tr>\
-      <td><strong>$\{d.roomNameTh || d.roomName\}</strong><br><span style="font-size:11px;color:var(--gray-500)">$\{d.roomName\}</span></td>\
-      <td>\uc0\u3647 $\{Number(d.priceWeekday).toLocaleString()\}</td>\
-      <td>\uc0\u3647 $\{Number(d.priceWeekend).toLocaleString()\}</td>\
-      <td>$\{d.maxGuests\} \uc0\u3588 \u3609 </td>\
-      <td>$\{d.maxPets\} \uc0\u3605 \u3633 \u3623 </td>\
-      <td><div class="action-row">\
-        <button class="btn-icon btn-view" onclick="editRoom('$\{doc.id\}')">\uc0\u3649 \u3585 \u3657 \u3652 \u3586 </button>\
-        <button class="btn-icon btn-reject" onclick="deleteRoom('$\{doc.id\}')">\uc0\u3621 \u3610 </button>\
-      </div></td>\
-    </tr>`;\
-  \});\
-\}\
-\
-let editRoomId = null;\
-function showAddRoom() \{ editRoomId = null; ['rName','rNameTh','rPriceWd','rPriceWe','rDesc','rPhoto'].forEach(id => document.getElementById(id).value = ''); document.getElementById('rMaxGuests').value = 2; document.getElementById('rMaxPets').value = 1; document.getElementById('rSize').value = 0; document.getElementById('rBed').value = ''; openModal('addRoomModal'); \}\
-async function editRoom(id) \{\
-  editRoomId = id;\
-  const doc = await db.collection('places').doc(id).get();\
-  const d = doc.data();\
-  document.getElementById('rName').value = d.roomName || '';\
-  document.getElementById('rNameTh').value = d.roomNameTh || '';\
-  document.getElementById('rPriceWd').value = d.priceWeekday || '';\
-  document.getElementById('rPriceWe').value = d.priceWeekend || '';\
-  document.getElementById('rMaxGuests').value = d.maxGuests || 2;\
-  document.getElementById('rMaxPets').value = d.maxPets || 1;\
-  document.getElementById('rSize').value = d.roomSizeSqm || 0;\
-  document.getElementById('rBed').value = d.bedType || '';\
-  document.getElementById('rDesc').value = d.description || '';\
-  document.getElementById('rPhoto').value = d.photo || '';\
-  openModal('addRoomModal');\
-\}\
-async function saveRoom() \{\
-  const data = \{\
-    roomName: document.getElementById('rName').value,\
-    roomNameTh: document.getElementById('rNameTh').value,\
-    priceWeekday: document.getElementById('rPriceWd').value,\
-    priceWeekend: document.getElementById('rPriceWe').value,\
-    maxGuests: parseInt(document.getElementById('rMaxGuests').value),\
-    maxPets: parseInt(document.getElementById('rMaxPets').value),\
-    roomSizeSqm: document.getElementById('rSize').value,\
-    bedType: document.getElementById('rBed').value,\
-    description: document.getElementById('rDesc').value,\
-    photo: document.getElementById('rPhoto').value,\
-    hotel_id: currentHotelId,\
-    category: 'hotel_room'\
-  \};\
-  try \{\
-    if (editRoomId) \{ await db.collection('places').doc(editRoomId).update(data); \}\
-    else \{ await db.collection('places').add(data); \}\
-    closeModal('addRoomModal');\
-    loadRooms();\
-  \} catch(e) \{ document.getElementById('addRoomMsg').innerHTML = '<div class="error-msg">' + e.message + '</div>'; \}\
-\}\
-async function deleteRoom(id) \{\
-  if (!confirm('\uc0\u3621 \u3610 \u3627 \u3657 \u3629 \u3591 \u3609 \u3637 \u3657 ?')) return;\
-  await db.collection('places').doc(id).delete();\
-  loadRooms();\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// HOTEL: Bookings & Status\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-async function loadHotelBookings() \{\
-  const el = document.getElementById('hotelBookingList');\
-  el.innerHTML = '<div class="loading"><div class="spinner"></div><br>\uc0\u3585 \u3635 \u3621 \u3633 \u3591 \u3650 \u3627 \u3621 \u3604 ...</div>';\
-  const snap = await db.collection('bookings').where('hotelId', '==', currentHotelId).orderBy('bookedAt', 'desc').limit(50).get();\
-  if (snap.empty) \{ el.innerHTML = '<div class="empty-state"><div class="empty-icon">\uc0\u55357 \u56523 </div><p>\u3618 \u3633 \u3591 \u3652 \u3617 \u3656 \u3617 \u3637 \u3585 \u3634 \u3619 \u3592 \u3629 \u3591 </p></div>'; return; \}\
-  el.innerHTML = '<div class="card"><table><thead><tr><th>Ref</th><th>\uc0\u3594 \u3639 \u3656 \u3629 \u3612 \u3641 \u3657 \u3592 \u3629 \u3591 </th><th>\u3627 \u3657 \u3629 \u3591 </th><th>Check-in</th><th>Check-out</th><th>\u3619 \u3634 \u3588 \u3634 </th><th>\u3626 \u3606 \u3634 \u3609 \u3632 </th></tr></thead><tbody id="hBookTbody"></tbody></table></div>';\
-  const tbody = document.getElementById('hBookTbody');\
-  snap.docs.forEach(doc => \{\
-    const d = doc.data();\
-    const ci = d.checkIn?.toDate ? d.checkIn.toDate().toLocaleDateString('th-TH') : '-';\
-    const co = d.checkOut?.toDate ? d.checkOut.toDate().toLocaleDateString('th-TH') : '-';\
-    tbody.innerHTML += `<tr>\
-      <td><code style="font-size:11px">$\{d.bookingRef\}</code></td>\
-      <td>$\{d.guestName\}</td>\
-      <td>$\{d.roomName\}</td>\
-      <td>$\{ci\}</td><td>$\{co\}</td>\
-      <td>\uc0\u3647 $\{Number(d.totalPrice).toLocaleString()\}</td>\
-      <td><span class="badge badge-$\{d.status\}">$\{d.status === 'confirmed' ? '\uc0\u3618 \u3639 \u3609 \u3618 \u3633 \u3609 \u3649 \u3621 \u3657 \u3623 ' : d.status\}</span></td>\
-    </tr>`;\
-  \});\
-\}\
-\
-async function loadHotelStatus() \{\
-  const el = document.getElementById('statusList');\
-  el.innerHTML = '<div class="loading"><div class="spinner"></div><br>\uc0\u3585 \u3635 \u3621 \u3633 \u3591 \u3650 \u3627 \u3621 \u3604 ...</div>';\
-  const snap = await db.collection('pending_updates').where('hotelId', '==', currentHotelId).orderBy('submittedAt', 'desc').limit(20).get();\
-  if (snap.empty) \{ el.innerHTML = '<div class="empty-state"><div class="empty-icon">\uc0\u55357 \u56522 </div><p>\u3618 \u3633 \u3591 \u3652 \u3617 \u3656 \u3648 \u3588 \u3618 \u3626 \u3656 \u3591 \u3586 \u3657 \u3629 \u3617 \u3641 \u3621 </p></div>'; return; \}\
-  el.innerHTML = '<div class="card"><table><thead><tr><th>\uc0\u3623 \u3633 \u3609 \u3607 \u3637 \u3656 \u3626 \u3656 \u3591 </th><th>\u3594 \u3639 \u3656 \u3629 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 </th><th>\u3626 \u3606 \u3634 \u3609 \u3632 </th><th>\u3627 \u3617 \u3634 \u3618 \u3648 \u3627 \u3605 \u3640 </th></tr></thead><tbody id="statusTbody"></tbody></table></div>';\
-  const tbody = document.getElementById('statusTbody');\
-  snap.docs.forEach(doc => \{\
-    const d = doc.data();\
-    const dt = d.submittedAt?.toDate ? d.submittedAt.toDate().toLocaleString('th-TH') : '-';\
-    const statusMap = \{ pending: '\uc0\u3619 \u3629  Review', approved: 'Approve \u3649 \u3621 \u3657 \u3623 ', rejected: 'Reject' \};\
-    tbody.innerHTML += `<tr>\
-      <td>$\{dt\}</td>\
-      <td>$\{d.data?.name || '-'\}</td>\
-      <td><span class="badge badge-$\{d.status\}">$\{statusMap[d.status] || d.status\}</span></td>\
-      <td>$\{d.adminNote || '-'\}</td>\
-    </tr>`;\
-  \});\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// ADMIN: Load All Data\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-async function loadAdminData() \{\
-  const [hotelsSnap, pendingSnap, bookingsSnap] = await Promise.all([\
-    db.collection('places').where('category', '==', 'hotel').get(),\
-    db.collection('pending_updates').where('status', '==', 'pending').get(),\
-    db.collection('bookings').get()\
-  ]);\
-\
-  document.getElementById('statHotels').textContent = hotelsSnap.size;\
-  document.getElementById('statPending').textContent = pendingSnap.size;\
-  document.getElementById('pendingCount').textContent = pendingSnap.size || '';\
-\
-  const today = new Date(); today.setHours(0,0,0,0);\
-  let todayCount = 0, totalRev = 0;\
-  bookingsSnap.docs.forEach(doc => \{\
-    const d = doc.data();\
-    totalRev += Number(d.totalPrice || 0);\
-    const ba = d.bookedAt?.toDate ? d.bookedAt.toDate() : null;\
-    if (ba && ba >= today) todayCount++;\
-  \});\
-  document.getElementById('statBookingsToday').textContent = todayCount;\
-  document.getElementById('statRevenue').textContent = totalRev.toLocaleString();\
-\
-  // Recent pending\
-  const rp = document.getElementById('recentPending');\
-  if (pendingSnap.empty) \{ rp.innerHTML = '<div class="empty-state"><p>\uc0\u3652 \u3617 \u3656 \u3617 \u3637 \u3619 \u3634 \u3618 \u3585 \u3634 \u3619 \u3619 \u3629 </p></div>'; \}\
-  else \{\
-    rp.innerHTML = '';\
-    pendingSnap.docs.slice(0, 5).forEach(doc => \{\
-      const d = doc.data();\
-      const dt = d.submittedAt?.toDate ? d.submittedAt.toDate().toLocaleDateString('th-TH') : '-';\
-      rp.innerHTML += `<div class="info-row"><span class="info-label">$\{d.data?.name || '-'\}</span><button class="btn-icon btn-view" onclick="openReview('$\{doc.id\}')">\uc0\u3604 \u3641 </button></div>`;\
-    \});\
-  \}\
-\
-  // Recent bookings\
-  const rb = document.getElementById('recentBookings');\
-  const recentSnap = await db.collection('bookings').orderBy('bookedAt', 'desc').limit(5).get();\
-  if (recentSnap.empty) \{ rb.innerHTML = '<div class="empty-state"><p>\uc0\u3618 \u3633 \u3591 \u3652 \u3617 \u3656 \u3617 \u3637 \u3585 \u3634 \u3619 \u3592 \u3629 \u3591 </p></div>'; \}\
-  else \{\
-    rb.innerHTML = '';\
-    recentSnap.docs.forEach(doc => \{\
-      const d = doc.data();\
-      rb.innerHTML += `<div class="info-row"><span class="info-label">$\{d.guestName\} \'b7 $\{d.hotelName\}</span><span>\uc0\u3647 $\{Number(d.totalPrice).toLocaleString()\}</span></div>`;\
-    \});\
-  \}\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// ADMIN: Review\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-async function loadReviewList() \{\
-  const el = document.getElementById('reviewList');\
-  el.innerHTML = '<div class="loading"><div class="spinner"></div><br>\uc0\u3585 \u3635 \u3621 \u3633 \u3591 \u3650 \u3627 \u3621 \u3604 ...</div>';\
-  const snap = await db.collection('pending_updates').orderBy('submittedAt', 'desc').limit(50).get();\
-  if (snap.empty) \{ el.innerHTML = '<div class="empty-state"><div class="empty-icon">\uc0\u9989 </div><p>\u3652 \u3617 \u3656 \u3617 \u3637 \u3619 \u3634 \u3618 \u3585 \u3634 \u3619 \u3619 \u3629  Review</p></div>'; return; \}\
-  el.innerHTML = '<div class="card"><table><thead><tr><th>\uc0\u3623 \u3633 \u3609 \u3607 \u3637 \u3656 </th><th>\u3650 \u3619 \u3591 \u3649 \u3619 \u3617 </th><th>\u3629 \u3637 \u3648 \u3617 \u3621 </th><th>\u3626 \u3606 \u3634 \u3609 \u3632 </th><th>Action</th></tr></thead><tbody id="reviewTbody"></tbody></table></div>';\
-  const tbody = document.getElementById('reviewTbody');\
-  const statusMap = \{ pending: '\uc0\u3619 \u3629  Review', approved: 'Approved', rejected: 'Rejected' \};\
-  snap.docs.forEach(doc => \{\
-    const d = doc.data();\
-    const dt = d.submittedAt?.toDate ? d.submittedAt.toDate().toLocaleDateString('th-TH') : '-';\
-    tbody.innerHTML += `<tr>\
-      <td>$\{dt\}</td>\
-      <td><strong>$\{d.data?.name || '-'\}</strong></td>\
-      <td>$\{d.hotelEmail || '-'\}</td>\
-      <td><span class="badge badge-$\{d.status\}">$\{statusMap[d.status] || d.status\}</span></td>\
-      <td><div class="action-row">\
-        <button class="btn-icon btn-view" onclick="openReview('$\{doc.id\}')">\uc0\u3604 \u3641 \u3586 \u3657 \u3629 \u3617 \u3641 \u3621 </button>\
-        $\{d.status === 'pending' ? `<button class="btn-icon btn-approve" onclick="quickApprove('$\{doc.id\}')">\uc0\u10003  Approve</button><button class="btn-icon btn-reject" onclick="quickReject('$\{doc.id\}')">\u10005  Reject</button>` : ''\}\
-      </div></td>\
-    </tr>`;\
-  \});\
-\}\
-\
-async function openReview(id) \{\
-  currentReviewId = id;\
-  const doc = await db.collection('pending_updates').doc(id).get();\
-  currentReviewData = doc.data();\
-  const d = currentReviewData.data;\
-  const body = document.getElementById('reviewModalBody');\
-  body.innerHTML = `\
-    <div style="margin-bottom:16px">\
-      <span class="badge badge-$\{currentReviewData.status\}">$\{currentReviewData.status\}</span>\
-      <span style="font-size:12px;color:var(--gray-500);margin-left:8px">\uc0\u3626 \u3656 \u3591 \u3650 \u3604 \u3618  $\{currentReviewData.hotelEmail\}</span>\
-    </div>\
-    <div class="form-section-title">\uc0\u55357 \u56525  \u3586 \u3657 \u3629 \u3617 \u3641 \u3621 \u3614 \u3639 \u3657 \u3609 \u3600 \u3634 \u3609 </div>\
-    <div class="info-row"><span class="info-label">\uc0\u3594 \u3639 \u3656 \u3629 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 </span><span class="info-value">$\{d?.name || '-'\}</span></div>\
-    <div class="info-row"><span class="info-label">\uc0\u3592 \u3633 \u3591 \u3627 \u3623 \u3633 \u3604 </span><span class="info-value">$\{d?.province || '-'\}</span></div>\
-    <div class="info-row"><span class="info-label">\uc0\u3607 \u3637 \u3656 \u3629 \u3618 \u3641 \u3656 </span><span class="info-value">$\{d?.address || '-'\}</span></div>\
-    <div class="info-row"><span class="info-label">\uc0\u3648 \u3610 \u3629 \u3619 \u3660 \u3650 \u3607 \u3619 </span><span class="info-value">$\{d?.phone || '-'\}</span></div>\
-    <div class="info-row"><span class="info-label">\uc0\u3588 \u3635 \u3629 \u3608 \u3636 \u3610 \u3634 \u3618 </span><span class="info-value">$\{d?.description || '-'\}</span></div>\
-    <br><div class="form-section-title">\uc0\u55357 \u56382  \u3609 \u3650 \u3618 \u3610 \u3634 \u3618 \u3626 \u3633 \u3605 \u3623 \u3660 \u3648 \u3621 \u3637 \u3657 \u3618 \u3591 </div>\
-    <div class="info-row"><span class="info-label">\uc0\u3611 \u3619 \u3632 \u3648 \u3616 \u3607 \u3626 \u3633 \u3605 \u3623 \u3660 </span><span class="info-value">$\{d?.allowedPetTypes || '-'\}</span></div>\
-    <div class="info-row"><span class="info-label">\uc0\u3609 \u3657 \u3635 \u3627 \u3609 \u3633 \u3585 \u3626 \u3641 \u3591 \u3626 \u3640 \u3604 </span><span class="info-value">$\{d?.maxPetWeight == '0' ? '\u3652 \u3617 \u3656 \u3592 \u3635 \u3585 \u3633 \u3604 ' : d?.maxPetWeight + ' \u3585 \u3585 .'\}</span></div>\
-    <div class="info-row"><span class="info-label">\uc0\u3588 \u3656 \u3634 \u3626 \u3633 \u3605 \u3623 \u3660 /\u3588 \u3639 \u3609 </span><span class="info-value">$\{d?.petFeePerNight == '0' ? '\u3615 \u3619 \u3637 ' : '\u3647 ' + Number(d?.petFeePerNight).toLocaleString()\}</span></div>\
-    <br><div class="form-section-title">\uc0\u10024  \u3626 \u3636 \u3656 \u3591 \u3629 \u3635 \u3609 \u3623 \u3618 \u3588 \u3623 \u3634 \u3617 \u3626 \u3632 \u3604 \u3623 \u3585 </div>\
-    <div class="tags">$\{(d?.amenities || '').split(',').filter(Boolean).map(a => '<span class="tag">' + a + '</span>').join('')\}</div>\
-    <br><div class="form-section-title">\uc0\u55357 \u56568  \u3619 \u3641 \u3611 \u3616 \u3634 \u3614 </div>\
-    <div style="display:flex;gap:8px;flex-wrap:wrap">\
-      $\{[d?.photo1, d?.photo2, d?.photo3].filter(Boolean).map(p => `<img src="$\{p\}" style="width:100px;height:70px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-200)" onerror="this.style.display='none'">`).join('')\}\
-    </div>\
-    <br><div class="field"><label>\uc0\u3627 \u3617 \u3634 \u3618 \u3648 \u3627 \u3605 \u3640  Admin (\u3606 \u3657 \u3634  Reject)</label><input type="text" id="adminNote" placeholder="\u3648 \u3627 \u3605 \u3640 \u3612 \u3621 \u3607 \u3637 \u3656  Reject..."></div>\
-  `;\
-  openModal('reviewModal');\
-\}\
-\
-async function approveUpdate() \{\
-  if (!currentReviewId || !currentReviewData) return;\
-  const data = currentReviewData.data;\
-  data.sync_status = 'synced';\
-  try \{\
-    if (currentReviewData.hotelId) \{\
-      await db.collection('places').doc(currentReviewData.hotelId).update(data);\
-    \} else \{\
-      await db.collection('places').add(data);\
-    \}\
-    await db.collection('pending_updates').doc(currentReviewId).update(\{ status: 'approved', approvedAt: firebase.firestore.FieldValue.serverTimestamp() \});\
-    closeModal('reviewModal');\
-    loadReviewList();\
-    loadAdminData();\
-    alert('\uc0\u9989  Approved! \u3586 \u3657 \u3629 \u3617 \u3641 \u3621 \u3586 \u3638 \u3657 \u3609 \u3649 \u3629 \u3611 \u3649 \u3621 \u3657 \u3623 ');\
-  \} catch(e) \{ alert('Error: ' + e.message); \}\
-\}\
-\
-async function rejectUpdate() \{\
-  if (!currentReviewId) return;\
-  const note = document.getElementById('adminNote')?.value || '';\
-  await db.collection('pending_updates').doc(currentReviewId).update(\{ status: 'rejected', adminNote: note, rejectedAt: firebase.firestore.FieldValue.serverTimestamp() \});\
-  closeModal('reviewModal');\
-  loadReviewList();\
-\}\
-\
-async function quickApprove(id) \{\
-  const doc = await db.collection('pending_updates').doc(id).get();\
-  const data = doc.data();\
-  if (data.hotelId) await db.collection('places').doc(data.hotelId).update(\{ ...data.data, sync_status: 'synced' \});\
-  await db.collection('pending_updates').doc(id).update(\{ status: 'approved', approvedAt: firebase.firestore.FieldValue.serverTimestamp() \});\
-  loadReviewList(); loadAdminData();\
-\}\
-\
-async function quickReject(id) \{\
-  await db.collection('pending_updates').doc(id).update(\{ status: 'rejected', rejectedAt: firebase.firestore.FieldValue.serverTimestamp() \});\
-  loadReviewList(); loadAdminData();\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// ADMIN: Manage Hotels\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-async function loadAdminHotels() \{\
-  const el = document.getElementById('adminHotelList');\
-  el.innerHTML = '<div class="loading"><div class="spinner"></div><br>\uc0\u3585 \u3635 \u3621 \u3633 \u3591 \u3650 \u3627 \u3621 \u3604 ...</div>';\
-  const [hotelsSnap, accountsSnap] = await Promise.all([\
-    db.collection('places').where('category', '==', 'hotel').get(),\
-    db.collection('hotel_accounts').get()\
-  ]);\
-  const accountsByHotelId = \{\};\
-  accountsSnap.docs.forEach(doc => \{ accountsByHotelId[doc.data().hotelId] = doc.data(); \});\
-  if (hotelsSnap.empty) \{ el.innerHTML = '<div class="empty-state"><div class="empty-icon">\uc0\u55356 \u57320 </div><p>\u3618 \u3633 \u3591 \u3652 \u3617 \u3656 \u3617 \u3637 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 </p></div>'; return; \}\
-  el.innerHTML = '<div class="card"><table><thead><tr><th>\uc0\u3594 \u3639 \u3656 \u3629 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 </th><th>\u3592 \u3633 \u3591 \u3627 \u3623 \u3633 \u3604 </th><th>\u3629 \u3637 \u3648 \u3617 \u3621  Login</th><th>\u3588 \u3656 \u3634 \u3626 \u3633 \u3605 \u3623 \u3660 </th><th>\u3626 \u3606 \u3634 \u3609 \u3632 </th><th></th></tr></thead><tbody id="hotelListTbody"></tbody></table></div>';\
-  const tbody = document.getElementById('hotelListTbody');\
-  hotelsSnap.docs.forEach(doc => \{\
-    const d = doc.data();\
-    const acc = accountsByHotelId[doc.id];\
-    tbody.innerHTML += `<tr>\
-      <td><strong>$\{d.name\}</strong></td>\
-      <td>$\{d.province\}</td>\
-      <td>$\{acc?.email || '<span style="color:var(--orange)">\uc0\u3618 \u3633 \u3591 \u3652 \u3617 \u3656 \u3617 \u3637  account</span>'\}</td>\
-      <td>$\{d.petFeePerNight == '0' ? '<span style="color:var(--green)">\uc0\u3615 \u3619 \u3637 </span>' : '\u3647 ' + Number(d.petFeePerNight).toLocaleString()\}</td>\
-      <td><span class="badge badge-approved">Live</span></td>\
-      <td><button class="btn-icon btn-reject" onclick="deleteHotel('$\{doc.id\}')">\uc0\u3621 \u3610 </button></td>\
-    </tr>`;\
-  \});\
-\}\
-\
-function showAddHotelAccount() \{ openModal('addHotelModal'); \}\
-\
-async function createHotelAccount() \{\
-  const name = document.getElementById('newHotelName').value;\
-  const email = document.getElementById('newHotelEmail').value;\
-  const pass = document.getElementById('newHotelPass').value;\
-  const hotelId = document.getElementById('newHotelId').value;\
-  const msgEl = document.getElementById('addHotelMsg');\
-  if (!name || !email || !pass || !hotelId) \{ msgEl.innerHTML = '<div class="error-msg">\uc0\u3585 \u3619 \u3640 \u3603 \u3634 \u3585 \u3619 \u3629 \u3585 \u3651 \u3627 \u3657 \u3588 \u3619 \u3610 </div>'; return; \}\
-  try \{\
-    // Create Firebase Auth account\
-    const secondary = firebase.initializeApp(firebaseConfig, 'secondary_' + Date.now());\
-    const secAuth = secondary.auth();\
-    await secAuth.createUserWithEmailAndPassword(email, pass);\
-    await secAuth.signOut();\
-    await secondary.delete();\
-    // Save to hotel_accounts\
-    await db.collection('hotel_accounts').add(\{ hotelName: name, email: email, hotelId: hotelId, createdAt: firebase.firestore.FieldValue.serverTimestamp() \});\
-    msgEl.innerHTML = '<div class="success-msg">\uc0\u9989  \u3626 \u3619 \u3657 \u3634 \u3591  account \u3626 \u3635 \u3648 \u3619 \u3655 \u3592 ! \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 \u3626 \u3634 \u3617 \u3634 \u3619 \u3606  login \u3604 \u3657 \u3623 \u3618  ' + email + '</div>';\
-    loadAdminHotels();\
-  \} catch(e) \{ msgEl.innerHTML = '<div class="error-msg">Error: ' + e.message + '</div>'; \}\
-\}\
-\
-async function deleteHotel(id) \{\
-  if (!confirm('\uc0\u3621 \u3610 \u3650 \u3619 \u3591 \u3649 \u3619 \u3617 \u3609 \u3637 \u3657 \u3629 \u3629 \u3585 \u3592 \u3634 \u3585 \u3649 \u3629 \u3611 \u3604 \u3657 \u3623 \u3618 ?')) return;\
-  await db.collection('places').doc(id).delete();\
-  loadAdminHotels();\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// ADMIN: All Bookings\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-async function loadAdminBookings() \{\
-  const el = document.getElementById('adminBookingList');\
-  el.innerHTML = '<div class="loading"><div class="spinner"></div><br>\uc0\u3585 \u3635 \u3621 \u3633 \u3591 \u3650 \u3627 \u3621 \u3604 ...</div>';\
-  const snap = await db.collection('bookings').orderBy('bookedAt', 'desc').limit(100).get();\
-  if (snap.empty) \{ el.innerHTML = '<div class="empty-state"><div class="empty-icon">\uc0\u55357 \u56523 </div><p>\u3618 \u3633 \u3591 \u3652 \u3617 \u3656 \u3617 \u3637 \u3585 \u3634 \u3619 \u3592 \u3629 \u3591 </p></div>'; return; \}\
-  el.innerHTML = '<div class="card"><table><thead><tr><th>Ref</th><th>\uc0\u3650 \u3619 \u3591 \u3649 \u3619 \u3617 </th><th>\u3612 \u3641 \u3657 \u3592 \u3629 \u3591 </th><th>Check-in</th><th>\u3619 \u3634 \u3588 \u3634 </th><th>\u3626 \u3606 \u3634 \u3609 \u3632 </th></tr></thead><tbody id="adminBookTbody"></tbody></table></div>';\
-  const tbody = document.getElementById('adminBookTbody');\
-  snap.docs.forEach(doc => \{\
-    const d = doc.data();\
-    const ci = d.checkIn?.toDate ? d.checkIn.toDate().toLocaleDateString('th-TH') : '-';\
-    tbody.innerHTML += `<tr>\
-      <td><code style="font-size:11px">$\{d.bookingRef\}</code></td>\
-      <td>$\{d.hotelName\}</td>\
-      <td>$\{d.guestName\}<br><span style="font-size:11px;color:var(--gray-500)">$\{d.guestPhone\}</span></td>\
-      <td>$\{ci\}</td>\
-      <td>\uc0\u3647 $\{Number(d.totalPrice).toLocaleString()\}</td>\
-      <td><span class="badge badge-$\{d.status\}">$\{d.status === 'confirmed' ? '\uc0\u3618 \u3639 \u3609 \u3618 \u3633 \u3609 \u3649 \u3621 \u3657 \u3623 ' : d.status === 'cancelled' ? '\u3618 \u3585 \u3648 \u3621 \u3636 \u3585 ' : d.status\}</span></td>\
-    </tr>`;\
-  \});\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// ADMIN: Revenue\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-async function loadRevenue() \{\
-  const snap = await db.collection('bookings').where('status', '==', 'confirmed').get();\
-  const today = new Date(); today.setHours(0,0,0,0);\
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);\
-  let totalRev = 0, todayRev = 0, monthRev = 0;\
-  const byHotel = \{\};\
-  snap.docs.forEach(doc => \{\
-    const d = doc.data();\
-    const price = Number(d.totalPrice || 0);\
-    totalRev += price;\
-    const ba = d.bookedAt?.toDate ? d.bookedAt.toDate() : null;\
-    if (ba) \{\
-      if (ba >= today) todayRev += price;\
-      if (ba >= monthStart) monthRev += price;\
-    \}\
-    if (!byHotel[d.hotelName]) byHotel[d.hotelName] = 0;\
-    byHotel[d.hotelName] += price;\
-  \});\
-  document.getElementById('revToday').textContent = todayRev.toLocaleString();\
-  document.getElementById('revMonth').textContent = monthRev.toLocaleString();\
-  document.getElementById('revTotal').textContent = totalRev.toLocaleString();\
-  document.getElementById('revCount').textContent = snap.size;\
-  const el = document.getElementById('revenueByHotel');\
-  const sorted = Object.entries(byHotel).sort((a,b) => b[1]-a[1]);\
-  if (sorted.length === 0) \{ el.innerHTML = '<div class="empty-state"><p>\uc0\u3618 \u3633 \u3591 \u3652 \u3617 \u3656 \u3617 \u3637 \u3619 \u3634 \u3618 \u3652 \u3604 \u3657 </p></div>'; return; \}\
-  el.innerHTML = '';\
-  sorted.forEach(([name, rev]) => \{\
-    const pct = totalRev > 0 ? Math.round(rev / totalRev * 100) : 0;\
-    el.innerHTML += `<div style="margin-bottom:14px">\
-      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">\
-        <span>$\{name\}</span><span style="font-weight:600">\uc0\u3647 $\{rev.toLocaleString()\} ($\{pct\}%)</span>\
-      </div>\
-      <div style="height:6px;background:var(--gray-200);border-radius:3px">\
-        <div style="height:100%;width:$\{pct\}%;background:var(--blue);border-radius:3px"></div>\
-      </div>\
-    </div>`;\
-  \});\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// UTILS\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-function openModal(id) \{ document.getElementById(id).classList.add('open'); \}\
-function closeModal(id) \{ document.getElementById(id).classList.remove('open'); \}\
-document.querySelectorAll('.modal-overlay').forEach(m => \{\
-  m.addEventListener('click', e => \{ if (e.target === m) m.classList.remove('open'); \});\
-\});\
-</script>\
-</body>\
-</html>}
+  /* ─── Auth Screen ─── */
+  .auth-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+  .auth-logo { background: var(--blue); border-radius: 20px; padding: 16px 32px; margin-bottom: 32px; }
+  .auth-logo span { font-size: 28px; font-weight: 700; color: white; }
+  .auth-logo span.go { color: var(--yellow); }
+  .auth-card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 32px; width: 100%; max-width: 400px; }
+  .auth-card h2 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+  .auth-card p { font-size: 13px; color: var(--gray-500); margin-bottom: 24px; }
+  .tab-row { display: flex; background: var(--gray-100); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 24px; }
+  .tab-btn { flex: 1; padding: 8px; border: none; background: transparent; border-radius: 6px; font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; color: var(--gray-500); transition: all 0.2s; }
+  .tab-btn.active { background: white; color: var(--blue); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+
+  /* ─── Form Elements ─── */
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--gray-500); margin-bottom: 6px; }
+  .field input, .field select, .field textarea {
+    width: 100%; padding: 10px 12px; border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius-sm); font-family: var(--font); font-size: 14px;
+    color: var(--gray-700); background: white; transition: border-color 0.2s; outline: none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--blue); }
+  .field textarea { resize: vertical; min-height: 80px; }
+  .btn { width: 100%; padding: 12px; border: none; border-radius: var(--radius-sm); font-family: var(--font); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .btn-primary { background: var(--blue); color: white; }
+  .btn-primary:hover { background: var(--blue-dark); }
+  .btn-primary:disabled { background: var(--gray-400); cursor: not-allowed; }
+  .btn-danger { background: var(--red-light); color: var(--red); }
+  .btn-success { background: var(--green-light); color: var(--green); }
+  .btn-sm { width: auto; padding: 6px 14px; font-size: 13px; }
+  .error-msg { background: var(--red-light); color: var(--red); padding: 10px 12px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 16px; }
+  .success-msg { background: var(--green-light); color: var(--green); padding: 10px 12px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 16px; }
+
+  /* ─── App Layout ─── */
+  .app { display: none; min-height: 100vh; }
+  .app.visible { display: flex; flex-direction: column; }
+  .topbar { background: var(--blue); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .topbar-logo { font-size: 18px; font-weight: 700; color: white; }
+  .topbar-logo span { color: var(--yellow); }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .user-badge { background: rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: white; }
+  .admin-badge { background: var(--yellow); border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: 700; color: var(--gray-700); }
+  .logout-btn { background: rgba(255,255,255,0.15); border: none; border-radius: 20px; padding: 6px 14px; font-family: var(--font); font-size: 12px; color: white; cursor: pointer; }
+  .logout-btn:hover { background: rgba(255,255,255,0.25); }
+
+  .sidebar { width: 220px; background: white; border-right: 1px solid var(--gray-200); padding: 20px 12px; flex-shrink: 0; min-height: calc(100vh - 56px); }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; color: var(--gray-500); cursor: pointer; margin-bottom: 4px; transition: all 0.2s; border: none; background: transparent; width: 100%; text-align: left; font-family: var(--font); }
+  .nav-item:hover { background: var(--gray-100); color: var(--gray-700); }
+  .nav-item.active { background: var(--blue-light); color: var(--blue); }
+  .nav-item .icon { font-size: 16px; }
+  .nav-section { font-size: 10px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1px; padding: 16px 12px 6px; }
+
+  .main { flex: 1; padding: 28px; overflow-y: auto; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .page-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .page-sub { font-size: 14px; color: var(--gray-500); margin-bottom: 28px; }
+
+  /* ─── Cards ─── */
+  .card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; margin-bottom: 20px; }
+  .card-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; gap: 8px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; }
+  .stat-label { font-size: 12px; color: var(--gray-500); margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--gray-700); }
+  .stat-value.blue { color: var(--blue); }
+  .stat-value.green { color: var(--green); }
+  .stat-value.orange { color: var(--orange); }
+
+  /* ─── Section Grid ─── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } .sidebar { display: none; } }
+
+  /* ─── Table ─── */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 10px 12px; background: var(--gray-100); color: var(--gray-500); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 12px; border-bottom: 1px solid var(--gray-200); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--gray-50); }
+
+  /* ─── Badges ─── */
+  .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-pending { background: var(--orange-light); color: var(--orange); }
+  .badge-approved { background: var(--green-light); color: var(--green); }
+  .badge-rejected { background: var(--red-light); color: var(--red); }
+  .badge-confirmed { background: var(--blue-light); color: var(--blue); }
+
+  /* ─── Hotel Form ─── */
+  .form-section { margin-bottom: 24px; }
+  .form-section-title { font-size: 13px; font-weight: 700; color: var(--blue); margin-bottom: 14px; padding: 8px 12px; background: var(--blue-light); border-radius: var(--radius-sm); }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 600px) { .field-row { grid-template-columns: 1fr; } }
+  .counter-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--gray-200); }
+  .counter-label { font-size: 14px; }
+  .counter-controls { display: flex; align-items: center; gap: 14px; }
+  .counter-btn { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--blue); background: transparent; color: var(--blue); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: 700; line-height: 1; transition: all 0.2s; }
+  .counter-btn:hover { background: var(--blue); color: white; }
+  .counter-val { font-size: 16px; font-weight: 700; min-width: 28px; text-align: center; }
+
+  /* ─── Review Modal ─── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: var(--radius); max-width: 640px; width: 100%; max-height: 80vh; overflow-y: auto; }
+  .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: white; }
+  .modal-header h3 { font-size: 16px; font-weight: 700; }
+  .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--gray-500); }
+  .modal-body { padding: 24px; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--gray-200); display: flex; gap: 12px; justify-content: flex-end; }
+  .diff-row { display: flex; gap: 12px; margin-bottom: 10px; font-size: 13px; }
+  .diff-label { width: 140px; flex-shrink: 0; color: var(--gray-500); font-weight: 600; }
+  .diff-old { flex: 1; color: var(--red); text-decoration: line-through; }
+  .diff-new { flex: 1; color: var(--green); font-weight: 600; }
+
+  /* ─── Upload Area ─── */
+  .upload-area { border: 2px dashed var(--gray-400); border-radius: var(--radius-sm); padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s; }
+  .upload-area:hover { border-color: var(--blue); background: var(--blue-light); }
+  .upload-area p { font-size: 13px; color: var(--gray-500); margin-top: 8px; }
+  .photo-preview { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .photo-thumb { width: 80px; height: 60px; border-radius: 6px; object-fit: cover; border: 1px solid var(--gray-200); }
+
+  /* ─── Loading ─── */
+  .loading { text-align: center; padding: 40px; color: var(--gray-500); font-size: 14px; }
+  .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid var(--gray-200); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--gray-500); }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+  .flex-between { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+
+  /* ─── Action buttons row ─── */
+  .action-row { display: flex; gap: 8px; }
+  .btn-icon { padding: 6px 10px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; font-family: var(--font); transition: all 0.2s; }
+  .btn-approve { background: var(--green-light); color: var(--green); }
+  .btn-approve:hover { background: #c3ecd0; }
+  .btn-reject { background: var(--red-light); color: var(--red); }
+  .btn-reject:hover { background: #f5c0c0; }
+  .btn-view { background: var(--blue-light); color: var(--blue); }
+  .btn-view:hover { background: #d0e1fa; }
+
+  .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--gray-200); font-size: 13px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { color: var(--gray-500); }
+  .info-value { font-weight: 500; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .tag { background: var(--blue-light); color: var(--blue); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
+  .step-indicator { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; }
+  .step { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .step-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+  .step-dot.done { background: var(--blue); color: white; }
+  .step-dot.current { background: var(--yellow); color: var(--gray-700); }
+  .step-dot.upcoming { background: var(--gray-200); color: var(--gray-500); }
+  .step-line { flex: 1; height: 1px; background: var(--gray-200); }
+</style>
+</head>
+<body>
+
+<!-- ═══ AUTH SCREEN ═══ -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-logo">
+    <span>Pippo<span class="go">GO!</span></span>
+  </div>
+  <div class="auth-card">
+    <h2>เข้าสู่ระบบ</h2>
+    <p>ระบบจัดการสำหรับโรงแรมและ Admin</p>
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="switchAuthTab('hotel')">🏨 โรงแรม</button>
+      <button class="tab-btn" onclick="switchAuthTab('admin')">🛡 Admin</button>
+    </div>
+    <div id="errorMsg" class="error-msg" style="display:none"></div>
+    <div class="field">
+      <label>อีเมล</label>
+      <input type="email" id="loginEmail" placeholder="hotel@example.com">
+    </div>
+    <div class="field">
+      <label>รหัสผ่าน</label>
+      <input type="password" id="loginPassword" placeholder="รหัสผ่าน">
+    </div>
+    <button class="btn btn-primary" id="loginBtn" onclick="handleLogin()">เข้าสู่ระบบ</button>
+    <p style="text-align:center;font-size:12px;color:var(--gray-500);margin-top:16px">
+      ลืมรหัสผ่าน? ติดต่อ Admin ที่ support@pippogo.com
+    </p>
+  </div>
+</div>
+
+<!-- ═══ MAIN APP ═══ -->
+<div class="app" id="mainApp">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-logo">Pippo<span>GO!</span> <span style="font-size:12px;font-weight:400;opacity:0.7" id="portalLabel">Hotel Portal</span></div>
+    <div class="topbar-right">
+      <span class="admin-badge" id="adminBadge" style="display:none">ADMIN</span>
+      <span class="user-badge" id="userEmail">-</span>
+      <button class="logout-btn" onclick="handleLogout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <div style="display:flex;flex:1">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <!-- Hotel nav -->
+      <div id="hotelNav">
+        <div class="nav-section">โรงแรม</div>
+        <button class="nav-item active" onclick="goPage('hotelInfo')">
+          <span class="icon">🏨</span> ข้อมูลโรงแรม
+        </button>
+        <button class="nav-item" onclick="goPage('hotelRooms')">
+          <span class="icon">🛏</span> ห้องพัก
+        </button>
+        <button class="nav-item" onclick="goPage('hotelBookings')">
+          <span class="icon">📋</span> การจอง
+        </button>
+        <button class="nav-item" onclick="goPage('hotelStatus')">
+          <span class="icon">📊</span> สถานะการส่ง
+        </button>
+      </div>
+      <!-- Admin nav -->
+      <div id="adminNav" style="display:none">
+        <div class="nav-section">Admin</div>
+        <button class="nav-item active" onclick="goPage('adminOverview')">
+          <span class="icon">📊</span> Overview
+        </button>
+        <button class="nav-item" onclick="goPage('adminReview')">
+          <span class="icon">⏳</span> Review <span id="pendingCount" style="background:var(--orange);color:white;border-radius:20px;padding:1px 7px;font-size:10px;margin-left:4px"></span>
+        </button>
+        <button class="nav-item" onclick="goPage('adminHotels')">
+          <span class="icon">🏨</span> จัดการโรงแรม
+        </button>
+        <button class="nav-item" onclick="goPage('adminBookings')">
+          <span class="icon">📋</span> Bookings ทั้งหมด
+        </button>
+        <button class="nav-item" onclick="goPage('adminRevenue')">
+          <span class="icon">💰</span> Revenue
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main">
+
+      <!-- ─── HOTEL: ข้อมูลโรงแรม ─── -->
+      <div class="page active" id="page-hotelInfo">
+        <div class="page-title">ข้อมูลโรงแรม</div>
+        <div class="page-sub">แก้ไขข้อมูลโรงแรมของคุณ — จะถูกส่ง Admin ตรวจสอบก่อนขึ้นแอป</div>
+
+        <div class="step-indicator">
+          <div class="step"><div class="step-dot current">1</div><span>แก้ไขข้อมูล</span></div>
+          <div class="step-line"></div>
+          <div class="step"><div class="step-dot upcoming">2</div><span>Admin Review</span></div>
+          <div class="step-line"></div>
+          <div class="step"><div class="step-dot upcoming">3</div><span>ขึ้นแอป ✓</span></div>
+        </div>
+
+        <div class="card">
+          <div id="hotelFormMsg"></div>
+
+          <div class="form-section">
+            <div class="form-section-title">📍 ข้อมูลพื้นฐาน</div>
+            <div class="field-row">
+              <div class="field"><label>ชื่อโรงแรม (ภาษาไทย) *</label><input type="text" id="hName" placeholder="The Pawsome Resort"></div>
+              <div class="field"><label>จังหวัด *</label>
+                <select id="hProvince">
+                  <option value="">-- เลือกจังหวัด --</option>
+                  <option>กรุงเทพมหานคร</option><option>เชียงใหม่</option><option>เชียงราย</option>
+                  <option>ขอนแก่น</option><option>ชลบุรี</option><option>นครราชสีมา</option>
+                  <option>ภูเก็ต</option><option>สุราษฎร์ธานี</option><option>กระบี่</option>
+                  <option>พระนครศรีอยุธยา</option><option>กาญจนบุรี</option>
+                </select>
+              </div>
+            </div>
+            <div class="field"><label>ที่อยู่เต็ม *</label><input type="text" id="hAddress" placeholder="123 หมู่ 5 ถ.ธนะรัชต์ ปากช่อง นครราชสีมา 30130"></div>
+            <div class="field-row">
+              <div class="field"><label>เบอร์โทรศัพท์</label><input type="tel" id="hPhone" placeholder="+66812345678"></div>
+              <div class="field"><label>Google Maps URL</label><input type="url" id="hMapUrl" placeholder="https://maps.app.goo.gl/..."></div>
+            </div>
+            <div class="field"><label>คำอธิบายโรงแรม</label><textarea id="hDesc" placeholder="รีสอร์ทสุดหรูท่ามกลางธรรมชาติ..."></textarea></div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">⏰ เวลา Check-in / Check-out</div>
+            <div class="field-row">
+              <div class="field"><label>เวลา Check-in</label><input type="time" id="hCheckIn" value="14:00"></div>
+              <div class="field"><label>เวลา Check-out</label><input type="time" id="hCheckOut" value="12:00"></div>
+            </div>
+            <div class="field"><label>นโยบายยกเลิก</label><input type="text" id="hCancel" placeholder="ยกเลิกฟรีก่อน 7 วัน"></div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">🐾 นโยบายสัตว์เลี้ยง</div>
+            <div class="field-row">
+              <div class="field"><label>รับสัตว์เลี้ยงประเภท</label>
+                <select id="hPetTypes">
+                  <option value="dog,cat">สุนัขและแมว</option>
+                  <option value="dog">สุนัขเท่านั้น</option>
+                  <option value="cat">แมวเท่านั้น</option>
+                </select>
+              </div>
+              <div class="field"><label>น้ำหนักสูงสุด (กก.) — 0 = ไม่จำกัด</label><input type="number" id="hMaxWeight" value="0" min="0"></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label>จำนวนสัตว์สูงสุด/ห้อง</label><input type="number" id="hMaxPets" value="2" min="1"></div>
+              <div class="field"><label>ค่าสัตว์เลี้ยง (฿/ตัว/คืน) — 0 = ฟรี</label><input type="number" id="hPetFee" value="0" min="0"></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label>มัดจำสัตว์เลี้ยง (฿)</label><input type="number" id="hPetDeposit" value="0" min="0"></div>
+              <div class="field"><label>ค่าผู้เข้าพักเพิ่ม (฿/คน/คืน)</label><input type="number" id="hExtraGuest" value="500" min="0"></div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">✨ สิ่งอำนวยความสะดวก</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
+              <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" value="pool" class="amenity-cb"> 🏊 สระว่ายน้ำ</label>
+              <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" value="breakfast" class="amenity-cb"> 🍳 อาหารเช้า</label>
+              <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" value="wifi" class="amenity-cb"> 📶 WiFi ฟรี</label>
+              <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" value="parking" class="amenity-cb"> 🚗 ที่จอดรถ</label>
+              <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" value="pet_area" class="amenity-cb"> 🐾 พื้นที่สัตว์</label>
+              <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" value="garden" class="amenity-cb"> 🌿 สวน</label>
+              <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" value="pet_shower" class="amenity-cb"> 🚿 อาบน้ำสัตว์</label>
+              <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" value="pet_bed" class="amenity-cb"> 🛏 ที่นอนสัตว์</label>
+              <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" value="private_beach" class="amenity-cb"> 🏖 ชายหาดส่วนตัว</label>
+              <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" value="bbq" class="amenity-cb"> 🔥 BBQ</label>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">📸 รูปภาพโรงแรม</div>
+            <div class="field-row">
+              <div class="field"><label>URL รูปภาพ 1 *</label><input type="url" id="hPhoto1" placeholder="https://..."></div>
+              <div class="field"><label>URL รูปภาพ 2</label><input type="url" id="hPhoto2" placeholder="https://..."></div>
+            </div>
+            <div class="field"><label>URL รูปภาพ 3</label><input type="url" id="hPhoto3" placeholder="https://..."></div>
+          </div>
+
+          <button class="btn btn-primary" onclick="submitHotelUpdate()">📤 ส่งข้อมูลให้ Admin ตรวจสอบ</button>
+        </div>
+      </div>
+
+      <!-- ─── HOTEL: ห้องพัก ─── -->
+      <div class="page" id="page-hotelRooms">
+        <div class="flex-between">
+          <div>
+            <div class="page-title">ห้องพัก</div>
+            <div class="page-sub">จัดการห้องพักและราคา</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="showAddRoom()">+ เพิ่มห้อง</button>
+        </div>
+        <div id="roomList"><div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div></div>
+      </div>
+
+      <!-- ─── HOTEL: การจอง ─── -->
+      <div class="page" id="page-hotelBookings">
+        <div class="page-title">การจองของโรงแรมฉัน</div>
+        <div class="page-sub">รายการจองจากแอป PippoGO</div>
+        <div id="hotelBookingList"><div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div></div>
+      </div>
+
+      <!-- ─── HOTEL: สถานะ ─── -->
+      <div class="page" id="page-hotelStatus">
+        <div class="page-title">สถานะการส่งข้อมูล</div>
+        <div class="page-sub">ติดตามการ approve จาก Admin</div>
+        <div id="statusList"><div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div></div>
+      </div>
+
+      <!-- ─── ADMIN: Overview ─── -->
+      <div class="page" id="page-adminOverview">
+        <div class="page-title">Admin Overview</div>
+        <div class="page-sub">ภาพรวมระบบ PippoGO</div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-label">โรงแรมทั้งหมด</div><div class="stat-value blue" id="statHotels">-</div></div>
+          <div class="stat-card"><div class="stat-label">รอ Review</div><div class="stat-value orange" id="statPending">-</div></div>
+          <div class="stat-card"><div class="stat-label">Booking วันนี้</div><div class="stat-value green" id="statBookingsToday">-</div></div>
+          <div class="stat-card"><div class="stat-label">Revenue รวม (฿)</div><div class="stat-value" id="statRevenue">-</div></div>
+        </div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title">⏳ รอ Review ล่าสุด</div>
+            <div id="recentPending"><div class="loading">กำลังโหลด...</div></div>
+          </div>
+          <div class="card">
+            <div class="card-title">📋 Booking ล่าสุด</div>
+            <div id="recentBookings"><div class="loading">กำลังโหลด...</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── ADMIN: Review ─── -->
+      <div class="page" id="page-adminReview">
+        <div class="page-title">Review ข้อมูลโรงแรม</div>
+        <div class="page-sub">ตรวจสอบและ Approve/Reject ข้อมูลที่โรงแรมส่งมา</div>
+        <div id="reviewList"><div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div></div>
+      </div>
+
+      <!-- ─── ADMIN: Hotels ─── -->
+      <div class="page" id="page-adminHotels">
+        <div class="flex-between">
+          <div>
+            <div class="page-title">จัดการโรงแรม</div>
+            <div class="page-sub">เพิ่ม/ลบ/แก้ไขโรงแรมในระบบ</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="showAddHotelAccount()">+ เพิ่มโรงแรมใหม่</button>
+        </div>
+        <div id="adminHotelList"><div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div></div>
+      </div>
+
+      <!-- ─── ADMIN: Bookings ─── -->
+      <div class="page" id="page-adminBookings">
+        <div class="page-title">Bookings ทั้งหมด</div>
+        <div class="page-sub">การจองจากแอป PippoGO ทั้งระบบ</div>
+        <div id="adminBookingList"><div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div></div>
+      </div>
+
+      <!-- ─── ADMIN: Revenue ─── -->
+      <div class="page" id="page-adminRevenue">
+        <div class="page-title">Revenue</div>
+        <div class="page-sub">รายได้จากการจองผ่านแอป PippoGO</div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-label">รายได้วันนี้ (฿)</div><div class="stat-value blue" id="revToday">-</div></div>
+          <div class="stat-card"><div class="stat-label">รายได้เดือนนี้ (฿)</div><div class="stat-value green" id="revMonth">-</div></div>
+          <div class="stat-card"><div class="stat-label">รายได้รวม (฿)</div><div class="stat-value" id="revTotal">-</div></div>
+          <div class="stat-card"><div class="stat-label">Booking ที่สำเร็จ</div><div class="stat-value" id="revCount">-</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">💰 รายได้แยกตามโรงแรม</div>
+          <div id="revenueByHotel"><div class="loading">กำลังโหลด...</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal: Review ─── -->
+<div class="modal-overlay" id="reviewModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📋 ตรวจสอบข้อมูล</h3>
+      <button class="modal-close" onclick="closeModal('reviewModal')">✕</button>
+    </div>
+    <div class="modal-body" id="reviewModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" onclick="rejectUpdate()">✕ Reject</button>
+      <button class="btn btn-success btn-sm" onclick="approveUpdate()">✓ Approve & ขึ้นแอป</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal: Add Hotel Account ─── -->
+<div class="modal-overlay" id="addHotelModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🏨 เพิ่มโรงแรมใหม่</h3>
+      <button class="modal-close" onclick="closeModal('addHotelModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="addHotelMsg"></div>
+      <div class="field"><label>ชื่อโรงแรม *</label><input type="text" id="newHotelName" placeholder="The Pawsome Resort"></div>
+      <div class="field"><label>อีเมล Login สำหรับโรงแรม *</label><input type="email" id="newHotelEmail" placeholder="manager@pawsome.com"></div>
+      <div class="field"><label>รหัสผ่านเริ่มต้น *</label><input type="password" id="newHotelPass" placeholder="อย่างน้อย 8 ตัวอักษร"></div>
+      <div class="field"><label>Hotel ID (Firestore doc ID) *</label><input type="text" id="newHotelId" placeholder="hotel_001"></div>
+      <p style="font-size:12px;color:var(--gray-500);margin-top:8px">โรงแรมจะได้รับอีเมลพร้อม login เพื่อเข้าแก้ไขข้อมูลตัวเอง</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary btn-sm" onclick="createHotelAccount()">สร้าง Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal: Add Room ─── -->
+<div class="modal-overlay" id="addRoomModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🛏 เพิ่ม/แก้ไขห้องพัก</h3>
+      <button class="modal-close" onclick="closeModal('addRoomModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="addRoomMsg"></div>
+      <div class="field-row">
+        <div class="field"><label>ชื่อห้อง (EN)</label><input type="text" id="rName" placeholder="Deluxe Pet Suite"></div>
+        <div class="field"><label>ชื่อห้อง (TH)</label><input type="text" id="rNameTh" placeholder="ห้องดีลักซ์สำหรับสัตว์เลี้ยง"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>ราคา Weekday (฿)</label><input type="number" id="rPriceWd" placeholder="2000" min="0"></div>
+        <div class="field"><label>ราคา Weekend (฿)</label><input type="number" id="rPriceWe" placeholder="2500" min="0"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>รับได้ (คน)</label><input type="number" id="rMaxGuests" value="2" min="1"></div>
+        <div class="field"><label>รับสัตว์ (ตัว)</label><input type="number" id="rMaxPets" value="1" min="0"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>ขนาดห้อง (ตร.ม.)</label><input type="number" id="rSize" value="0" min="0"></div>
+        <div class="field"><label>ประเภทเตียง</label><input type="text" id="rBed" placeholder="King Size"></div>
+      </div>
+      <div class="field"><label>คำอธิบายห้อง</label><textarea id="rDesc" placeholder="ห้องพักสุดหรูพร้อม..."></textarea></div>
+      <div class="field"><label>URL รูปห้อง</label><input type="url" id="rPhoto" placeholder="https://..."></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary btn-sm" onclick="saveRoom()">บันทึกห้อง</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+// FIREBASE CONFIG — แทนที่ด้วยของคุณ
+// ════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyD88Om-vKnpvX2RUSVifrSH_EA0gBcrHOA",
+  authDomain: "pippo-go.firebaseapp.com",
+  projectId: "pippo-go",
+  storageBucket: "pippo-go.firebasestorage.app",
+  messagingSenderId: "828784788403",
+  appId: "1:828784788403:web:2445bfb05c0f60678c41c6"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+let currentUser = null;
+let currentRole = null; // 'hotel' | 'admin'
+let currentHotelId = null;
+let currentReviewId = null;
+let currentReviewData = null;
+
+// Admin emails — เพิ่มได้หลายคน
+const ADMIN_EMAILS = ['admin@pippogo.com', 'seth@pippogo.com', 'yok-chinn@hotmail.com'];
+
+// ════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════
+function switchAuthTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', (tab === 'hotel' && i === 0) || (tab === 'admin' && i === 1));
+  });
+}
+
+async function handleLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  const errEl = document.getElementById('errorMsg');
+  errEl.style.display = 'none';
+  if (!email || !pass) { showError('กรุณากรอกอีเมลและรหัสผ่าน'); return; }
+  btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ...';
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+  } catch (e) {
+    showError('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+    btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ';
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+async function handleLogout() {
+  await auth.signOut();
+  document.getElementById('mainApp').classList.remove('visible');
+  document.getElementById('authScreen').style.display = 'flex';
+}
+
+auth.onAuthStateChanged(async (user) => {
+  if (!user) {
+    document.getElementById('authScreen').style.display = 'flex';
+    document.getElementById('mainApp').classList.remove('visible');
+    return;
+  }
+  currentUser = user;
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('mainApp').classList.add('visible');
+  document.getElementById('userEmail').textContent = user.email;
+
+  if (ADMIN_EMAILS.includes(user.email)) {
+    // Admin mode
+    currentRole = 'admin';
+    document.getElementById('adminBadge').style.display = 'inline';
+    document.getElementById('portalLabel').textContent = 'Admin Dashboard';
+    document.getElementById('hotelNav').style.display = 'none';
+    document.getElementById('adminNav').style.display = 'block';
+    goPage('adminOverview');
+    loadAdminData();
+  } else {
+    // Hotel mode
+    currentRole = 'hotel';
+    document.getElementById('adminBadge').style.display = 'none';
+    document.getElementById('portalLabel').textContent = 'Hotel Portal';
+    document.getElementById('hotelNav').style.display = 'block';
+    document.getElementById('adminNav').style.display = 'none';
+    // Find hotel account
+    const snap = await db.collection('hotel_accounts').where('email', '==', user.email).limit(1).get();
+    if (!snap.empty) {
+      const acc = snap.docs[0];
+      currentHotelId = acc.data().hotelId;
+      loadHotelForm();
+    }
+    goPage('hotelInfo');
+  }
+});
+
+// ════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════
+function goPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + pageId).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.getAttribute('onclick')?.includes(pageId));
+  });
+  // Lazy load
+  if (pageId === 'hotelRooms') loadRooms();
+  if (pageId === 'hotelBookings') loadHotelBookings();
+  if (pageId === 'hotelStatus') loadHotelStatus();
+  if (pageId === 'adminReview') loadReviewList();
+  if (pageId === 'adminHotels') loadAdminHotels();
+  if (pageId === 'adminBookings') loadAdminBookings();
+  if (pageId === 'adminRevenue') loadRevenue();
+}
+
+// ════════════════════════════════════════════
+// HOTEL: Load & Submit Info
+// ════════════════════════════════════════════
+async function loadHotelForm() {
+  if (!currentHotelId) return;
+  try {
+    const doc = await db.collection('places').doc(currentHotelId).get();
+    if (!doc.exists) return;
+    const d = doc.data();
+    document.getElementById('hName').value = d.name || '';
+    document.getElementById('hProvince').value = d.province || '';
+    document.getElementById('hAddress').value = d.address || '';
+    document.getElementById('hPhone').value = d.phone || '';
+    document.getElementById('hMapUrl').value = d.googleMapUrl || '';
+    document.getElementById('hDesc').value = d.description || '';
+    document.getElementById('hCheckIn').value = d.checkInTime || '14:00';
+    document.getElementById('hCheckOut').value = d.checkOutTime || '12:00';
+    document.getElementById('hCancel').value = d.cancellationPolicy || '';
+    document.getElementById('hPetTypes').value = d.allowedPetTypes || 'dog,cat';
+    document.getElementById('hMaxWeight').value = d.maxPetWeight || '0';
+    document.getElementById('hMaxPets').value = d.maxPetCount || '2';
+    document.getElementById('hPetFee').value = d.petFeePerNight || '0';
+    document.getElementById('hPetDeposit').value = d.petDeposit || '0';
+    document.getElementById('hExtraGuest').value = d.extraGuestFeePerNight || '500';
+    document.getElementById('hPhoto1').value = d.photo1 || '';
+    document.getElementById('hPhoto2').value = d.photo2 || '';
+    document.getElementById('hPhoto3').value = d.photo3 || '';
+    const amenities = (d.amenities || '').split(',').map(a => a.trim());
+    document.querySelectorAll('.amenity-cb').forEach(cb => {
+      cb.checked = amenities.includes(cb.value);
+    });
+  } catch(e) { console.error(e); }
+}
+
+async function submitHotelUpdate() {
+  const msgEl = document.getElementById('hotelFormMsg');
+  msgEl.innerHTML = '';
+  const amenities = Array.from(document.querySelectorAll('.amenity-cb:checked')).map(c => c.value).join(',');
+  const data = {
+    hotelId: currentHotelId,
+    hotelEmail: currentUser.email,
+    submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    status: 'pending',
+    data: {
+      name: document.getElementById('hName').value,
+      province: document.getElementById('hProvince').value,
+      address: document.getElementById('hAddress').value,
+      phone: document.getElementById('hPhone').value,
+      googleMapUrl: document.getElementById('hMapUrl').value,
+      description: document.getElementById('hDesc').value,
+      checkInTime: document.getElementById('hCheckIn').value,
+      checkOutTime: document.getElementById('hCheckOut').value,
+      cancellationPolicy: document.getElementById('hCancel').value,
+      allowedPetTypes: document.getElementById('hPetTypes').value,
+      maxPetWeight: document.getElementById('hMaxWeight').value,
+      maxPetCount: document.getElementById('hMaxPets').value,
+      petFeePerNight: document.getElementById('hPetFee').value,
+      petDeposit: document.getElementById('hPetDeposit').value,
+      extraGuestFeePerNight: document.getElementById('hExtraGuest').value,
+      photo1: document.getElementById('hPhoto1').value,
+      photo2: document.getElementById('hPhoto2').value,
+      photo3: document.getElementById('hPhoto3').value,
+      amenities: amenities,
+      category: 'hotel'
+    }
+  };
+  if (!data.data.name || !data.data.province) {
+    msgEl.innerHTML = '<div class="error-msg">กรุณากรอกชื่อโรงแรมและจังหวัด</div>';
+    return;
+  }
+  try {
+    await db.collection('pending_updates').add(data);
+    msgEl.innerHTML = '<div class="success-msg">✅ ส่งข้อมูลสำเร็จ! Admin จะตรวจสอบและแจ้งผลภายใน 24 ชม.</div>';
+    window.scrollTo(0, 0);
+  } catch(e) {
+    msgEl.innerHTML = '<div class="error-msg">เกิดข้อผิดพลาด: ' + e.message + '</div>';
+  }
+}
+
+// ════════════════════════════════════════════
+// HOTEL: Rooms
+// ════════════════════════════════════════════
+async function loadRooms() {
+  const el = document.getElementById('roomList');
+  if (!currentHotelId) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">🛏</div><p>ไม่พบข้อมูล hotel account</p></div>'; return; }
+  el.innerHTML = '<div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div>';
+  const snap = await db.collection('places').where('category', '==', 'hotel_room').where('hotel_id', '==', currentHotelId).get();
+  if (snap.empty) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🛏</div><p>ยังไม่มีห้องพัก กด "+ เพิ่มห้อง" เพื่อเริ่มต้น</p></div>';
+    return;
+  }
+  el.innerHTML = '<div class="card"><table><thead><tr><th>ชื่อห้อง</th><th>ราคา Weekday</th><th>ราคา Weekend</th><th>รับได้</th><th>สัตว์</th><th></th></tr></thead><tbody id="roomTbody"></tbody></table></div>';
+  const tbody = document.getElementById('roomTbody');
+  snap.docs.forEach(doc => {
+    const d = doc.data();
+    tbody.innerHTML += `<tr>
+      <td><strong>${d.roomNameTh || d.roomName}</strong><br><span style="font-size:11px;color:var(--gray-500)">${d.roomName}</span></td>
+      <td>฿${Number(d.priceWeekday).toLocaleString()}</td>
+      <td>฿${Number(d.priceWeekend).toLocaleString()}</td>
+      <td>${d.maxGuests} คน</td>
+      <td>${d.maxPets} ตัว</td>
+      <td><div class="action-row">
+        <button class="btn-icon btn-view" onclick="editRoom('${doc.id}')">แก้ไข</button>
+        <button class="btn-icon btn-reject" onclick="deleteRoom('${doc.id}')">ลบ</button>
+      </div></td>
+    </tr>`;
+  });
+}
+
+let editRoomId = null;
+function showAddRoom() { editRoomId = null; ['rName','rNameTh','rPriceWd','rPriceWe','rDesc','rPhoto'].forEach(id => document.getElementById(id).value = ''); document.getElementById('rMaxGuests').value = 2; document.getElementById('rMaxPets').value = 1; document.getElementById('rSize').value = 0; document.getElementById('rBed').value = ''; openModal('addRoomModal'); }
+async function editRoom(id) {
+  editRoomId = id;
+  const doc = await db.collection('places').doc(id).get();
+  const d = doc.data();
+  document.getElementById('rName').value = d.roomName || '';
+  document.getElementById('rNameTh').value = d.roomNameTh || '';
+  document.getElementById('rPriceWd').value = d.priceWeekday || '';
+  document.getElementById('rPriceWe').value = d.priceWeekend || '';
+  document.getElementById('rMaxGuests').value = d.maxGuests || 2;
+  document.getElementById('rMaxPets').value = d.maxPets || 1;
+  document.getElementById('rSize').value = d.roomSizeSqm || 0;
+  document.getElementById('rBed').value = d.bedType || '';
+  document.getElementById('rDesc').value = d.description || '';
+  document.getElementById('rPhoto').value = d.photo || '';
+  openModal('addRoomModal');
+}
+async function saveRoom() {
+  const data = {
+    roomName: document.getElementById('rName').value,
+    roomNameTh: document.getElementById('rNameTh').value,
+    priceWeekday: document.getElementById('rPriceWd').value,
+    priceWeekend: document.getElementById('rPriceWe').value,
+    maxGuests: parseInt(document.getElementById('rMaxGuests').value),
+    maxPets: parseInt(document.getElementById('rMaxPets').value),
+    roomSizeSqm: document.getElementById('rSize').value,
+    bedType: document.getElementById('rBed').value,
+    description: document.getElementById('rDesc').value,
+    photo: document.getElementById('rPhoto').value,
+    hotel_id: currentHotelId,
+    category: 'hotel_room'
+  };
+  try {
+    if (editRoomId) { await db.collection('places').doc(editRoomId).update(data); }
+    else { await db.collection('places').add(data); }
+    closeModal('addRoomModal');
+    loadRooms();
+  } catch(e) { document.getElementById('addRoomMsg').innerHTML = '<div class="error-msg">' + e.message + '</div>'; }
+}
+async function deleteRoom(id) {
+  if (!confirm('ลบห้องนี้?')) return;
+  await db.collection('places').doc(id).delete();
+  loadRooms();
+}
+
+// ════════════════════════════════════════════
+// HOTEL: Bookings & Status
+// ════════════════════════════════════════════
+async function loadHotelBookings() {
+  const el = document.getElementById('hotelBookingList');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div>';
+  const snap = await db.collection('bookings').where('hotelId', '==', currentHotelId).orderBy('bookedAt', 'desc').limit(50).get();
+  if (snap.empty) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>ยังไม่มีการจอง</p></div>'; return; }
+  el.innerHTML = '<div class="card"><table><thead><tr><th>Ref</th><th>ชื่อผู้จอง</th><th>ห้อง</th><th>Check-in</th><th>Check-out</th><th>ราคา</th><th>สถานะ</th></tr></thead><tbody id="hBookTbody"></tbody></table></div>';
+  const tbody = document.getElementById('hBookTbody');
+  snap.docs.forEach(doc => {
+    const d = doc.data();
+    const ci = d.checkIn?.toDate ? d.checkIn.toDate().toLocaleDateString('th-TH') : '-';
+    const co = d.checkOut?.toDate ? d.checkOut.toDate().toLocaleDateString('th-TH') : '-';
+    tbody.innerHTML += `<tr>
+      <td><code style="font-size:11px">${d.bookingRef}</code></td>
+      <td>${d.guestName}</td>
+      <td>${d.roomName}</td>
+      <td>${ci}</td><td>${co}</td>
+      <td>฿${Number(d.totalPrice).toLocaleString()}</td>
+      <td><span class="badge badge-${d.status}">${d.status === 'confirmed' ? 'ยืนยันแล้ว' : d.status}</span></td>
+    </tr>`;
+  });
+}
+
+async function loadHotelStatus() {
+  const el = document.getElementById('statusList');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div>';
+  const snap = await db.collection('pending_updates').where('hotelId', '==', currentHotelId).orderBy('submittedAt', 'desc').limit(20).get();
+  if (snap.empty) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><p>ยังไม่เคยส่งข้อมูล</p></div>'; return; }
+  el.innerHTML = '<div class="card"><table><thead><tr><th>วันที่ส่ง</th><th>ชื่อโรงแรม</th><th>สถานะ</th><th>หมายเหตุ</th></tr></thead><tbody id="statusTbody"></tbody></table></div>';
+  const tbody = document.getElementById('statusTbody');
+  snap.docs.forEach(doc => {
+    const d = doc.data();
+    const dt = d.submittedAt?.toDate ? d.submittedAt.toDate().toLocaleString('th-TH') : '-';
+    const statusMap = { pending: 'รอ Review', approved: 'Approve แล้ว', rejected: 'Reject' };
+    tbody.innerHTML += `<tr>
+      <td>${dt}</td>
+      <td>${d.data?.name || '-'}</td>
+      <td><span class="badge badge-${d.status}">${statusMap[d.status] || d.status}</span></td>
+      <td>${d.adminNote || '-'}</td>
+    </tr>`;
+  });
+}
+
+// ════════════════════════════════════════════
+// ADMIN: Load All Data
+// ════════════════════════════════════════════
+async function loadAdminData() {
+  const [hotelsSnap, pendingSnap, bookingsSnap] = await Promise.all([
+    db.collection('places').where('category', '==', 'hotel').get(),
+    db.collection('pending_updates').where('status', '==', 'pending').get(),
+    db.collection('bookings').get()
+  ]);
+
+  document.getElementById('statHotels').textContent = hotelsSnap.size;
+  document.getElementById('statPending').textContent = pendingSnap.size;
+  document.getElementById('pendingCount').textContent = pendingSnap.size || '';
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  let todayCount = 0, totalRev = 0;
+  bookingsSnap.docs.forEach(doc => {
+    const d = doc.data();
+    totalRev += Number(d.totalPrice || 0);
+    const ba = d.bookedAt?.toDate ? d.bookedAt.toDate() : null;
+    if (ba && ba >= today) todayCount++;
+  });
+  document.getElementById('statBookingsToday').textContent = todayCount;
+  document.getElementById('statRevenue').textContent = totalRev.toLocaleString();
+
+  // Recent pending
+  const rp = document.getElementById('recentPending');
+  if (pendingSnap.empty) { rp.innerHTML = '<div class="empty-state"><p>ไม่มีรายการรอ</p></div>'; }
+  else {
+    rp.innerHTML = '';
+    pendingSnap.docs.slice(0, 5).forEach(doc => {
+      const d = doc.data();
+      const dt = d.submittedAt?.toDate ? d.submittedAt.toDate().toLocaleDateString('th-TH') : '-';
+      rp.innerHTML += `<div class="info-row"><span class="info-label">${d.data?.name || '-'}</span><button class="btn-icon btn-view" onclick="openReview('${doc.id}')">ดู</button></div>`;
+    });
+  }
+
+  // Recent bookings
+  const rb = document.getElementById('recentBookings');
+  const recentSnap = await db.collection('bookings').orderBy('bookedAt', 'desc').limit(5).get();
+  if (recentSnap.empty) { rb.innerHTML = '<div class="empty-state"><p>ยังไม่มีการจอง</p></div>'; }
+  else {
+    rb.innerHTML = '';
+    recentSnap.docs.forEach(doc => {
+      const d = doc.data();
+      rb.innerHTML += `<div class="info-row"><span class="info-label">${d.guestName} · ${d.hotelName}</span><span>฿${Number(d.totalPrice).toLocaleString()}</span></div>`;
+    });
+  }
+}
+
+// ════════════════════════════════════════════
+// ADMIN: Review
+// ════════════════════════════════════════════
+async function loadReviewList() {
+  const el = document.getElementById('reviewList');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div>';
+  const snap = await db.collection('pending_updates').orderBy('submittedAt', 'desc').limit(50).get();
+  if (snap.empty) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><p>ไม่มีรายการรอ Review</p></div>'; return; }
+  el.innerHTML = '<div class="card"><table><thead><tr><th>วันที่</th><th>โรงแรม</th><th>อีเมล</th><th>สถานะ</th><th>Action</th></tr></thead><tbody id="reviewTbody"></tbody></table></div>';
+  const tbody = document.getElementById('reviewTbody');
+  const statusMap = { pending: 'รอ Review', approved: 'Approved', rejected: 'Rejected' };
+  snap.docs.forEach(doc => {
+    const d = doc.data();
+    const dt = d.submittedAt?.toDate ? d.submittedAt.toDate().toLocaleDateString('th-TH') : '-';
+    tbody.innerHTML += `<tr>
+      <td>${dt}</td>
+      <td><strong>${d.data?.name || '-'}</strong></td>
+      <td>${d.hotelEmail || '-'}</td>
+      <td><span class="badge badge-${d.status}">${statusMap[d.status] || d.status}</span></td>
+      <td><div class="action-row">
+        <button class="btn-icon btn-view" onclick="openReview('${doc.id}')">ดูข้อมูล</button>
+        ${d.status === 'pending' ? `<button class="btn-icon btn-approve" onclick="quickApprove('${doc.id}')">✓ Approve</button><button class="btn-icon btn-reject" onclick="quickReject('${doc.id}')">✕ Reject</button>` : ''}
+      </div></td>
+    </tr>`;
+  });
+}
+
+async function openReview(id) {
+  currentReviewId = id;
+  const doc = await db.collection('pending_updates').doc(id).get();
+  currentReviewData = doc.data();
+  const d = currentReviewData.data;
+  const body = document.getElementById('reviewModalBody');
+  body.innerHTML = `
+    <div style="margin-bottom:16px">
+      <span class="badge badge-${currentReviewData.status}">${currentReviewData.status}</span>
+      <span style="font-size:12px;color:var(--gray-500);margin-left:8px">ส่งโดย ${currentReviewData.hotelEmail}</span>
+    </div>
+    <div class="form-section-title">📍 ข้อมูลพื้นฐาน</div>
+    <div class="info-row"><span class="info-label">ชื่อโรงแรม</span><span class="info-value">${d?.name || '-'}</span></div>
+    <div class="info-row"><span class="info-label">จังหวัด</span><span class="info-value">${d?.province || '-'}</span></div>
+    <div class="info-row"><span class="info-label">ที่อยู่</span><span class="info-value">${d?.address || '-'}</span></div>
+    <div class="info-row"><span class="info-label">เบอร์โทร</span><span class="info-value">${d?.phone || '-'}</span></div>
+    <div class="info-row"><span class="info-label">คำอธิบาย</span><span class="info-value">${d?.description || '-'}</span></div>
+    <br><div class="form-section-title">🐾 นโยบายสัตว์เลี้ยง</div>
+    <div class="info-row"><span class="info-label">ประเภทสัตว์</span><span class="info-value">${d?.allowedPetTypes || '-'}</span></div>
+    <div class="info-row"><span class="info-label">น้ำหนักสูงสุด</span><span class="info-value">${d?.maxPetWeight == '0' ? 'ไม่จำกัด' : d?.maxPetWeight + ' กก.'}</span></div>
+    <div class="info-row"><span class="info-label">ค่าสัตว์/คืน</span><span class="info-value">${d?.petFeePerNight == '0' ? 'ฟรี' : '฿' + Number(d?.petFeePerNight).toLocaleString()}</span></div>
+    <br><div class="form-section-title">✨ สิ่งอำนวยความสะดวก</div>
+    <div class="tags">${(d?.amenities || '').split(',').filter(Boolean).map(a => '<span class="tag">' + a + '</span>').join('')}</div>
+    <br><div class="form-section-title">📸 รูปภาพ</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${[d?.photo1, d?.photo2, d?.photo3].filter(Boolean).map(p => `<img src="${p}" style="width:100px;height:70px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-200)" onerror="this.style.display='none'">`).join('')}
+    </div>
+    <br><div class="field"><label>หมายเหตุ Admin (ถ้า Reject)</label><input type="text" id="adminNote" placeholder="เหตุผลที่ Reject..."></div>
+  `;
+  openModal('reviewModal');
+}
+
+async function approveUpdate() {
+  if (!currentReviewId || !currentReviewData) return;
+  const data = currentReviewData.data;
+  data.sync_status = 'synced';
+  try {
+    if (currentReviewData.hotelId) {
+      await db.collection('places').doc(currentReviewData.hotelId).update(data);
+    } else {
+      await db.collection('places').add(data);
+    }
+    await db.collection('pending_updates').doc(currentReviewId).update({ status: 'approved', approvedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    closeModal('reviewModal');
+    loadReviewList();
+    loadAdminData();
+    alert('✅ Approved! ข้อมูลขึ้นแอปแล้ว');
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+async function rejectUpdate() {
+  if (!currentReviewId) return;
+  const note = document.getElementById('adminNote')?.value || '';
+  await db.collection('pending_updates').doc(currentReviewId).update({ status: 'rejected', adminNote: note, rejectedAt: firebase.firestore.FieldValue.serverTimestamp() });
+  closeModal('reviewModal');
+  loadReviewList();
+}
+
+async function quickApprove(id) {
+  const doc = await db.collection('pending_updates').doc(id).get();
+  const data = doc.data();
+  if (data.hotelId) await db.collection('places').doc(data.hotelId).update({ ...data.data, sync_status: 'synced' });
+  await db.collection('pending_updates').doc(id).update({ status: 'approved', approvedAt: firebase.firestore.FieldValue.serverTimestamp() });
+  loadReviewList(); loadAdminData();
+}
+
+async function quickReject(id) {
+  await db.collection('pending_updates').doc(id).update({ status: 'rejected', rejectedAt: firebase.firestore.FieldValue.serverTimestamp() });
+  loadReviewList(); loadAdminData();
+}
+
+// ════════════════════════════════════════════
+// ADMIN: Manage Hotels
+// ════════════════════════════════════════════
+async function loadAdminHotels() {
+  const el = document.getElementById('adminHotelList');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div>';
+  const [hotelsSnap, accountsSnap] = await Promise.all([
+    db.collection('places').where('category', '==', 'hotel').get(),
+    db.collection('hotel_accounts').get()
+  ]);
+  const accountsByHotelId = {};
+  accountsSnap.docs.forEach(doc => { accountsByHotelId[doc.data().hotelId] = doc.data(); });
+  if (hotelsSnap.empty) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">🏨</div><p>ยังไม่มีโรงแรม</p></div>'; return; }
+  el.innerHTML = '<div class="card"><table><thead><tr><th>ชื่อโรงแรม</th><th>จังหวัด</th><th>อีเมล Login</th><th>ค่าสัตว์</th><th>สถานะ</th><th></th></tr></thead><tbody id="hotelListTbody"></tbody></table></div>';
+  const tbody = document.getElementById('hotelListTbody');
+  hotelsSnap.docs.forEach(doc => {
+    const d = doc.data();
+    const acc = accountsByHotelId[doc.id];
+    tbody.innerHTML += `<tr>
+      <td><strong>${d.name}</strong></td>
+      <td>${d.province}</td>
+      <td>${acc?.email || '<span style="color:var(--orange)">ยังไม่มี account</span>'}</td>
+      <td>${d.petFeePerNight == '0' ? '<span style="color:var(--green)">ฟรี</span>' : '฿' + Number(d.petFeePerNight).toLocaleString()}</td>
+      <td><span class="badge badge-approved">Live</span></td>
+      <td><button class="btn-icon btn-reject" onclick="deleteHotel('${doc.id}')">ลบ</button></td>
+    </tr>`;
+  });
+}
+
+function showAddHotelAccount() { openModal('addHotelModal'); }
+
+async function createHotelAccount() {
+  const name = document.getElementById('newHotelName').value;
+  const email = document.getElementById('newHotelEmail').value;
+  const pass = document.getElementById('newHotelPass').value;
+  const hotelId = document.getElementById('newHotelId').value;
+  const msgEl = document.getElementById('addHotelMsg');
+  if (!name || !email || !pass || !hotelId) { msgEl.innerHTML = '<div class="error-msg">กรุณากรอกให้ครบ</div>'; return; }
+  try {
+    // Create Firebase Auth account
+    const secondary = firebase.initializeApp(firebaseConfig, 'secondary_' + Date.now());
+    const secAuth = secondary.auth();
+    await secAuth.createUserWithEmailAndPassword(email, pass);
+    await secAuth.signOut();
+    await secondary.delete();
+    // Save to hotel_accounts
+    await db.collection('hotel_accounts').add({ hotelName: name, email: email, hotelId: hotelId, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    msgEl.innerHTML = '<div class="success-msg">✅ สร้าง account สำเร็จ! โรงแรมสามารถ login ด้วย ' + email + '</div>';
+    loadAdminHotels();
+  } catch(e) { msgEl.innerHTML = '<div class="error-msg">Error: ' + e.message + '</div>'; }
+}
+
+async function deleteHotel(id) {
+  if (!confirm('ลบโรงแรมนี้ออกจากแอปด้วย?')) return;
+  await db.collection('places').doc(id).delete();
+  loadAdminHotels();
+}
+
+// ════════════════════════════════════════════
+// ADMIN: All Bookings
+// ════════════════════════════════════════════
+async function loadAdminBookings() {
+  const el = document.getElementById('adminBookingList');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div>';
+  const snap = await db.collection('bookings').orderBy('bookedAt', 'desc').limit(100).get();
+  if (snap.empty) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>ยังไม่มีการจอง</p></div>'; return; }
+  el.innerHTML = '<div class="card"><table><thead><tr><th>Ref</th><th>โรงแรม</th><th>ผู้จอง</th><th>Check-in</th><th>ราคา</th><th>สถานะ</th></tr></thead><tbody id="adminBookTbody"></tbody></table></div>';
+  const tbody = document.getElementById('adminBookTbody');
+  snap.docs.forEach(doc => {
+    const d = doc.data();
+    const ci = d.checkIn?.toDate ? d.checkIn.toDate().toLocaleDateString('th-TH') : '-';
+    tbody.innerHTML += `<tr>
+      <td><code style="font-size:11px">${d.bookingRef}</code></td>
+      <td>${d.hotelName}</td>
+      <td>${d.guestName}<br><span style="font-size:11px;color:var(--gray-500)">${d.guestPhone}</span></td>
+      <td>${ci}</td>
+      <td>฿${Number(d.totalPrice).toLocaleString()}</td>
+      <td><span class="badge badge-${d.status}">${d.status === 'confirmed' ? 'ยืนยันแล้ว' : d.status === 'cancelled' ? 'ยกเลิก' : d.status}</span></td>
+    </tr>`;
+  });
+}
+
+// ════════════════════════════════════════════
+// ADMIN: Revenue
+// ════════════════════════════════════════════
+async function loadRevenue() {
+  const snap = await db.collection('bookings').where('status', '==', 'confirmed').get();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  let totalRev = 0, todayRev = 0, monthRev = 0;
+  const byHotel = {};
+  snap.docs.forEach(doc => {
+    const d = doc.data();
+    const price = Number(d.totalPrice || 0);
+    totalRev += price;
+    const ba = d.bookedAt?.toDate ? d.bookedAt.toDate() : null;
+    if (ba) {
+      if (ba >= today) todayRev += price;
+      if (ba >= monthStart) monthRev += price;
+    }
+    if (!byHotel[d.hotelName]) byHotel[d.hotelName] = 0;
+    byHotel[d.hotelName] += price;
+  });
+  document.getElementById('revToday').textContent = todayRev.toLocaleString();
+  document.getElementById('revMonth').textContent = monthRev.toLocaleString();
+  document.getElementById('revTotal').textContent = totalRev.toLocaleString();
+  document.getElementById('revCount').textContent = snap.size;
+  const el = document.getElementById('revenueByHotel');
+  const sorted = Object.entries(byHotel).sort((a,b) => b[1]-a[1]);
+  if (sorted.length === 0) { el.innerHTML = '<div class="empty-state"><p>ยังไม่มีรายได้</p></div>'; return; }
+  el.innerHTML = '';
+  sorted.forEach(([name, rev]) => {
+    const pct = totalRev > 0 ? Math.round(rev / totalRev * 100) : 0;
+    el.innerHTML += `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+        <span>${name}</span><span style="font-weight:600">฿${rev.toLocaleString()} (${pct}%)</span>
+      </div>
+      <div style="height:6px;background:var(--gray-200);border-radius:3px">
+        <div style="height:100%;width:${pct}%;background:var(--blue);border-radius:3px"></div>
+      </div>
+    </div>`;
+  });
+}
+
+// ════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+</script>
+</body>
+</html>
