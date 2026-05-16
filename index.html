@@ -163,7 +163,29 @@ tr:hover td{background:var(--gray-50);}
 .cat-boarding{color:#5C4033;}
 
 @media(max-width:768px){.two-col{grid-template-columns:1fr;}.sidebar{display:none;}.biz-grid{grid-template-columns:repeat(2,1fr);}}
+
+    /* ─── Map Filter Buttons ─── */
+    .map-filter-btn {
+      padding: 5px 12px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 20px;
+      background: white;
+      font-family: var(--font);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gray-600);
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .map-filter-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .map-filter-btn.active { background: var(--blue); color: white; border-color: var(--blue); }
+    .leaflet-container { font-family: var(--font) !important; }
 </style>
+  <!-- Leaflet Map -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
 </head>
 <body>
 
@@ -1183,6 +1205,8 @@ async function submitBizUpdate() {
 
 // ─── Admin: Load Data ───
 async function loadAdminData() {
+  // Init map after short delay to ensure DOM is ready
+  setTimeout(() => { if (document.getElementById('overviewMap')) initOverviewMap(); }, 300);
   const [usersSnap, pendingSnap, placesSnap, bookingsSnap] = await Promise.all([
     db.collection('business_accounts').get(),
     db.collection('pending_updates').where('status','==','pending').get(),
@@ -1908,6 +1932,124 @@ async function saveEditPlace() {
   } catch(e) {
     msgEl.innerHTML = '<div class="error-msg">เกิดข้อผิดพลาด: ' + e.message + '</div>';
   }
+}
+
+// ─── Overview Map ───
+let overviewMap = null;
+let heatLayer = null;
+let dotLayers = [];
+let allMapPlaces = [];
+let currentMapFilter = 'all';
+let currentMapMode = 'heat';
+
+const catColors = {
+  hotel: '#2561E4', cafe: '#BA7517', mall: '#7B2D8B',
+  attraction: '#1a6b35', vet: '#b00020', petshop: '#0C447C', boarding: '#5C4033'
+};
+const catLabels = {
+  hotel:'โรงแรม', cafe:'ร้านอาหาร', mall:'ห้าง',
+  attraction:'ท่องเที่ยว', vet:'รพ.สัตว์', petshop:'Pet Shop', boarding:'รับฝาก'
+};
+
+async function initOverviewMap() {
+  if (overviewMap) return;
+  
+  // Init Leaflet map centered on Thailand
+  overviewMap = L.map('overviewMap', { zoomControl: true }).setView([13.0, 101.0], 6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap',
+    maxZoom: 18
+  }).addTo(overviewMap);
+
+  // Load all places with location
+  await loadMapPlaces();
+  renderMap();
+}
+
+async function loadMapPlaces() {
+  allMapPlaces = [];
+  const cats = ['hotel','cafe','mall','attraction','vet','petshop','boarding'];
+  const promises = cats.map(cat =>
+    db.collection('places').where('category','==',cat).get().then(snap => {
+      snap.docs.forEach(doc => {
+        const d = doc.data();
+        let lat = 0, lng = 0;
+        if (d.location) { lat = d.location.latitude; lng = d.location.longitude; }
+        else if (d.latitude && d.longitude) { lat = parseFloat(d.latitude); lng = parseFloat(d.longitude); }
+        if (lat > 5 && lat < 21 && lng > 97 && lng < 106) {
+          allMapPlaces.push({ id: doc.id, name: d.name || d.nameThai || '', cat, lat, lng, province: d.province || '' });
+        }
+      });
+    })
+  );
+  await Promise.all(promises);
+}
+
+function getFilteredPlaces() {
+  return currentMapFilter === 'all' ? allMapPlaces : allMapPlaces.filter(p => p.cat === currentMapFilter);
+}
+
+function renderMap() {
+  const places = getFilteredPlaces();
+  
+  // Clear existing layers
+  if (heatLayer) { overviewMap.removeLayer(heatLayer); heatLayer = null; }
+  dotLayers.forEach(l => overviewMap.removeLayer(l));
+  dotLayers = [];
+
+  // Update stats
+  updateMapStats(places);
+
+  if (currentMapMode === 'heat') {
+    // Heatmap mode
+    const points = places.map(p => [p.lat, p.lng, 1]);
+    heatLayer = L.heatLayer(points, {
+      radius: 20, blur: 15, maxZoom: 10,
+      gradient: { 0.2: '#00f', 0.4: '#0ff', 0.6: '#0f0', 0.8: '#ff0', 1.0: '#f00' }
+    }).addTo(overviewMap);
+  } else {
+    // Dots mode
+    places.forEach(p => {
+      const color = catColors[p.cat] || '#666';
+      const marker = L.circleMarker([p.lat, p.lng], {
+        radius: 5, fillColor: color, color: 'white',
+        weight: 1, opacity: 1, fillOpacity: 0.8
+      }).addTo(overviewMap);
+      marker.bindPopup(`
+        <div style="font-family:Anuphan,sans-serif;min-width:160px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px">${p.name||'-'}</div>
+          <div style="font-size:11px;color:#666">${catLabels[p.cat]||p.cat} · ${p.province}</div>
+        </div>
+      `);
+      dotLayers.push(marker);
+    });
+  }
+
+  document.getElementById('mapPlaceCount').textContent = `แสดง ${places.length.toLocaleString()} สถานที่`;
+}
+
+function updateMapStats(places) {
+  const counts = {};
+  places.forEach(p => { counts[p.cat] = (counts[p.cat]||0) + 1; });
+  const statsEl = document.getElementById('mapStats');
+  if (!statsEl) return;
+  statsEl.innerHTML = Object.entries(counts).map(([cat, count]) => `
+    <span style="font-size:11px;padding:3px 10px;border-radius:12px;background:${catColors[cat]}20;color:${catColors[cat]};font-weight:600">
+      ${catLabels[cat]||cat}: ${count.toLocaleString()}
+    </span>
+  `).join('');
+}
+
+function setMapFilter(btn, cat) {
+  document.querySelectorAll('.map-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentMapFilter = cat;
+  renderMap();
+}
+
+function toggleMapMode() {
+  currentMapMode = document.getElementById('mapMode').value;
+  renderMap();
 }
 
 // ─── Admin: Add Place ───
