@@ -343,6 +343,22 @@ tr:hover td{background:var(--gray-50);}
           </div>
           <button class="btn btn-primary btn-sm" onclick="openAddPlaceModal()">+ เพิ่มสถานที่</button>
         </div>
+        <!-- Search + Province Filter -->
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <div style="flex:1;position:relative">
+            <input type="text" id="placesSearch" placeholder="🔍 ค้นหาชื่อร้าน จังหวัด หรือประเภท..." 
+              oninput="filterPlacesLocal()"
+              style="width:100%;padding:9px 14px 9px 36px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;outline:none;transition:border-color .2s"
+              onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--gray-200)'">
+            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gray-500);font-size:14px">🔍</span>
+            <div id="searchSuggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1px solid var(--gray-200);border-radius:var(--radius-sm);box-shadow:var(--shadow);z-index:50;max-height:200px;overflow-y:auto"></div>
+          </div>
+          <select id="placesProvinceFilter" onchange="filterPlacesLocal()"
+            style="padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;outline:none;min-width:160px;cursor:pointer"
+            onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--gray-200)'">
+            <option value="">🗺️ ทุกจังหวัด</option>
+          </select>
+        </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="placesFilterRow">
           <button class="btn-icon btn-view" onclick="filterPlaces('all')" id="filter-all">ทั้งหมด</button>
           <button class="btn-icon" style="background:var(--blue-light);color:var(--blue)" onclick="filterPlaces('hotel')" id="filter-hotel">🏨 โรงแรม</button>
@@ -1362,10 +1378,83 @@ async function loadPlaces(filter) {
     });
   }
   
+  // Populate province filter dropdown
+  if (filter === 'all') {
+    const provinces = [...new Set(allPlacesCache.map(p => p.province).filter(Boolean))].sort();
+    const sel = document.getElementById('placesProvinceFilter');
+    if (sel) {
+      const current = sel.value;
+      sel.innerHTML = '<option value="">🗺️ ทุกจังหวัด</option>' + 
+        provinces.map(p => `<option value="${p}" ${p===current?'selected':''}>${p}</option>`).join('');
+    }
+  }
+  
   renderPlaces(allPlacesCache);
 }
 
-function filterPlaces(cat) { loadPlaces(cat); }
+function filterPlaces(cat) { 
+  // highlight active filter
+  document.querySelectorAll('#placesFilterRow .btn-icon').forEach(b => b.style.opacity = '0.6');
+  const activeBtn = document.getElementById(`filter-${cat}`) || document.querySelector('#placesFilterRow .btn-icon');
+  if (activeBtn) activeBtn.style.opacity = '1';
+  loadPlaces(cat); 
+}
+
+function filterPlacesLocal() {
+  const q = (document.getElementById('placesSearch')?.value || '').toLowerCase().trim();
+  const province = document.getElementById('placesProvinceFilter')?.value || '';
+  
+  // Show suggestions
+  const suggestEl = document.getElementById('searchSuggestions');
+  if (q.length >= 1 && allPlacesCache.length) {
+    const matches = allPlacesCache.filter(p => {
+      const name = (p.name || p.nameThai || p.nameEnglish || '').toLowerCase();
+      return name.includes(q);
+    }).slice(0, 8);
+    
+    if (matches.length > 0) {
+      suggestEl.style.display = 'block';
+      suggestEl.innerHTML = matches.map(p => {
+        const catMap = { hotel:'🏨',cafe:'🍽️',mall:'🏬',attraction:'🌳',vet:'🏥',petshop:'🛍️',boarding:'🏡' };
+        const name = p.name || p.nameThai || '-';
+        return `<div onclick="selectSuggestion('${name.replace(/'/g,"\'")}','${p.province||''}')"
+          style="padding:8px 14px;cursor:pointer;font-size:13px;border-bottom:0.5px solid var(--gray-200)"
+          onmouseover="this.style.background='var(--gray-100)'" onmouseout="this.style.background='white'">
+          ${catMap[p.category]||'📍'} <strong>${name}</strong> <span style="color:var(--gray-500);font-size:11px">· ${p.province}</span>
+        </div>`;
+      }).join('');
+    } else {
+      suggestEl.style.display = 'none';
+    }
+  } else {
+    suggestEl.style.display = 'none';
+  }
+  
+  // Filter list
+  let result = allPlacesCache.filter(p => {
+    const name = (p.name || p.nameThai || p.nameEnglish || '').toLowerCase();
+    const prov = (p.province || '').toLowerCase();
+    const cat  = (p.category || '').toLowerCase();
+    const matchQ = !q || name.includes(q) || prov.includes(q) || cat.includes(q);
+    const matchProv = !province || p.province === province;
+    return matchQ && matchProv;
+  });
+  renderPlaces(result);
+}
+
+function selectSuggestion(name, province) {
+  document.getElementById('placesSearch').value = name;
+  document.getElementById('searchSuggestions').style.display = 'none';
+  filterPlacesLocal();
+}
+
+// Close suggestions when clicking outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('#placesSearch') && !e.target.closest('#searchSuggestions')) {
+    const s = document.getElementById('searchSuggestions');
+    if (s) s.style.display = 'none';
+  }
+});
 
 function renderPlaces(places) {
   const el = document.getElementById('placesList');
@@ -1380,9 +1469,10 @@ function renderPlaces(places) {
   places.forEach(d => {
     const lastEdit = d.lastEditedAt ? new Date(d.lastEditedAt.seconds*1000).toLocaleDateString('th-TH') : '-';
     const lastEditor = d.lastEditedBy || '-';
+    const displayName = d.name || d.nameThai || d.nameEnglish || '-';
     tbody.innerHTML += `<tr>
       <td>${catMap[d.category]||'📍'} ${d.category||'-'}</td>
-      <td><strong>${d.name||'-'}</strong></td>
+      <td><strong>${displayName}</strong>${d.nameThai && d.name && d.nameThai !== d.name ? `<br><span style="font-size:11px;color:var(--gray-500)">${d.nameThai}</span>` : ''}</td>
       <td>${d.province||'-'}</td>
       <td>${d.phone||'-'}</td>
       <td style="font-size:11px;color:var(--gray-500)">${lastEdit !== '-' ? `${lastEdit}<br><span style="color:var(--blue)">${lastEditor}</span>` : '-'}</td>
