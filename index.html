@@ -338,6 +338,40 @@ tr:hover td{background:var(--gray-50);}
             <div id="recentRegistrations"><div class="loading">กำลังโหลด...</div></div>
           </div>
         </div>
+
+        <!-- ─── MAP ─── -->
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="padding:16px 20px 12px;border-bottom:1px solid var(--gray-200)">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+              <div>
+                <div class="card-title" style="margin:0;border:none;padding:0">🗺️ แผนที่ความหนาแน่น</div>
+                <div style="font-size:12px;color:var(--gray-500);margin-top:2px">สถานที่ Pet-Friendly ทั่วประเทศไทย</div>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button class="map-filter-btn active" onclick="setMapFilter(this,'all')">🐾 ทั้งหมด</button>
+                <button class="map-filter-btn" onclick="setMapFilter(this,'hotel')">🏨 โรงแรม</button>
+                <button class="map-filter-btn" onclick="setMapFilter(this,'cafe')">🍽️ ร้านอาหาร</button>
+                <button class="map-filter-btn" onclick="setMapFilter(this,'mall')">🏬 ห้าง</button>
+                <button class="map-filter-btn" onclick="setMapFilter(this,'vet')">🏥 รพ.สัตว์</button>
+                <button class="map-filter-btn" onclick="setMapFilter(this,'petshop')">🛍️ Pet Shop</button>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <label style="font-size:12px;color:var(--gray-500)">โหมด:</label>
+                <select id="mapMode" onchange="toggleMapMode()" style="font-family:var(--font);font-size:12px;padding:5px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);outline:none;cursor:pointer">
+                  <option value="heat">🔥 Heatmap</option>
+                  <option value="dots">📍 จุด</option>
+                </select>
+              </div>
+            </div>
+            <div id="mapStats" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"></div>
+          </div>
+          <div id="overviewMap" style="height:480px;width:100%"></div>
+          <div style="padding:8px 20px;background:var(--gray-100);font-size:11px;color:var(--gray-500);display:flex;gap:16px;flex-wrap:wrap;align-items:center">
+            <span>🔴 หนาแน่นสูง</span><span>🟡 ปานกลาง</span><span>🟢 น้อย</span>
+            <span style="margin-left:auto;font-weight:600" id="mapPlaceCount"></span>
+          </div>
+        </div>
+
       </div>
 
       <!-- ─── ADMIN: Review ─── -->
