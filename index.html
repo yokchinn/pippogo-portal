@@ -764,12 +764,33 @@ function getBizForm(type, d) {
       <div class="field"><label>หมายเหตุเวลา (เช่น เปิด 24 ชม. / ปิดวันจันทร์)</label><input type="text" id="bOpenNote" value="${d.openNote||''}" placeholder="เปิดทุกวัน 09:00-21:00"></div>
     </div>
     <div class="form-section">
-      <div class="form-section-title">📸 รูปภาพ</div>
-      <div class="field-row">
-        <div class="field"><label>URL รูป 1 *</label><input type="url" id="bPhoto1" value="${d.photo1||''}" placeholder="https://..."></div>
-        <div class="field"><label>URL รูป 2</label><input type="url" id="bPhoto2" value="${d.photo2||''}" placeholder="https://..."></div>
+      <div class="form-section-title">📸 รูปภาพ <span style="font-weight:400;font-size:11px;color:var(--orange)">(ขั้นต่ำ 3 รูป)</span></div>
+      <p style="font-size:11px;color:var(--gray-500);margin-bottom:12px">วาง URL รูปภาพจาก Google Photos, Imgur หรือเว็บอื่นๆ กด "+ เพิ่มรูป" เพื่อเพิ่มได้ไม่จำกัด</p>
+      <div id="photoUrlList">
+        ${(()=>{
+          const photos = [d.photo1||'', d.photo2||'', d.photo3||'', ...(d.photos||[])].filter((v,i,a)=>v&&a.indexOf(v)===i);
+          const rows = Math.max(3, photos.length);
+          let html = '';
+          for(let i=0;i<rows;i++){
+            const val = photos[i]||'';
+            const isReq = i<3;
+            html += `<div class="photo-url-row" style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+              <div style="position:relative;flex:1">
+                <input type="url" class="photo-url-input" value="${val}" placeholder="https://... ${isReq?'(จำเป็น)':'(ไม่บังคับ)'}"
+                  oninput="previewPhoto(this)" style="width:100%;padding:9px 12px;border:1.5px solid ${isReq?'var(--gray-200)':'var(--gray-200)'};border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;outline:none">
+                ${val?`<img src="${val}" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:28px;height:28px;object-fit:cover;border-radius:4px;border:1px solid var(--gray-200)" onerror="this.style.display='none'" class="photo-preview-thumb">`:
+                '<span class="photo-preview-thumb" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--gray-400)">🖼️</span>'}
+              </div>
+              ${i>=3?`<button type="button" onclick="removePhotoRow(this)" style="padding:8px;background:var(--red-light);color:var(--red);border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:14px">✕</button>`:'<div style="width:32px"></div>'}
+            </div>`;
+          }
+          return html;
+        })()}
       </div>
-      <div class="field"><label>URL รูป 3</label><input type="url" id="bPhoto3" value="${d.photo3||''}" placeholder="https://..."></div>
+      <button type="button" onclick="addPhotoRow()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--blue-light);color:var(--blue);border:none;border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;margin-top:4px">
+        + เพิ่มรูปภาพ
+      </button>
+      <div id="photoValidationMsg" style="font-size:11px;color:var(--red);margin-top:6px;display:none">⚠️ กรุณาใส่ URL รูปภาพอย่างน้อย 3 รูป</div>
     </div>`;
 
   const typeExtra = {
@@ -927,7 +948,8 @@ function collectBizFormData(type) {
     address: g('bAddress'), googleMapUrl: g('bMapUrl'),
     latitude: latVal, longitude: lngVal,
     openTime: g('bOpenTime'), closeTime: g('bCloseTime'), openNote: g('bOpenNote'),
-    photo1: g('bPhoto1'), photo2: g('bPhoto2'), photo3: g('bPhoto3'),
+    photo1: getPhotoUrls()[0]||'', photo2: getPhotoUrls()[1]||'', photo3: getPhotoUrls()[2]||'',
+    photos: getPhotoUrls(),
     category: BIZ_TYPES[type].cat
   };
 
@@ -1896,6 +1918,7 @@ async function saveNewPlace() {
   const msgEl = document.getElementById('addPlaceMsg');
   msgEl.innerHTML = '';
   if (!type) { msgEl.innerHTML = '<div class="error-msg">กรุณาเลือกประเภทสถานที่</div>'; return; }
+  if (!validatePhotos()) { msgEl.innerHTML = '<div class="error-msg">กรุณาใส่ URL รูปภาพอย่างน้อย 3 รูป</div>'; return; }
   const data = collectBizFormData(type);
   if (!data.name || !data.province) { msgEl.innerHTML = '<div class="error-msg">กรุณากรอกชื่อสถานที่และจังหวัด</div>'; return; }
   data.sync_status = 'synced';
@@ -1908,6 +1931,63 @@ async function saveNewPlace() {
     loadAdminData();
     alert('✅ เพิ่มสถานที่สำเร็จ! ขึ้นแอปแล้ว');
   } catch(e) { msgEl.innerHTML = '<div class="error-msg">เกิดข้อผิดพลาด: ' + e.message + '</div>'; }
+}
+
+// ─── Photo URL Helpers ───
+function addPhotoRow() {
+  const list = document.getElementById('photoUrlList');
+  if (!list) return;
+  const div = document.createElement('div');
+  div.className = 'photo-url-row';
+  div.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center';
+  div.innerHTML = `
+    <div style="position:relative;flex:1">
+      <input type="url" class="photo-url-input" placeholder="https://... (ไม่บังคับ)"
+        oninput="previewPhoto(this)" style="width:100%;padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;outline:none">
+      <span class="photo-preview-thumb" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--gray-400)">🖼️</span>
+    </div>
+    <button type="button" onclick="removePhotoRow(this)" style="padding:8px;background:var(--red-light);color:var(--red);border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:14px">✕</button>
+  `;
+  list.appendChild(div);
+}
+
+function removePhotoRow(btn) {
+  btn.closest('.photo-url-row').remove();
+}
+
+function previewPhoto(input) {
+  const thumb = input.parentElement.querySelector('.photo-preview-thumb');
+  if (!thumb) return;
+  const url = input.value.trim();
+  if (url) {
+    if (thumb.tagName === 'IMG') {
+      thumb.src = url;
+      thumb.style.display = '';
+    } else {
+      const img = document.createElement('img');
+      img.src = url;
+      img.style.cssText = 'position:absolute;right:8px;top:50%;transform:translateY(-50%);width:28px;height:28px;object-fit:cover;border-radius:4px;border:1px solid var(--gray-200)';
+      img.className = 'photo-preview-thumb';
+      img.onerror = () => img.style.display = 'none';
+      thumb.replaceWith(img);
+    }
+  }
+}
+
+function getPhotoUrls() {
+  const inputs = document.querySelectorAll('#photoUrlList .photo-url-input');
+  return Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
+}
+
+function validatePhotos() {
+  const photos = getPhotoUrls();
+  const msgEl = document.getElementById('photoValidationMsg');
+  if (photos.length < 3) {
+    if (msgEl) msgEl.style.display = 'block';
+    return false;
+  }
+  if (msgEl) msgEl.style.display = 'none';
+  return true;
 }
 
 // ─── Lat/Lng Helpers ───
