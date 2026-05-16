@@ -1157,13 +1157,15 @@ async function loadAdminData() {
   }
 
   const rr = document.getElementById('recentRegistrations');
-  const regSnap = await db.collection('business_registrations').orderBy('registeredAt','desc').limit(5).get();
-  if (regSnap.empty) { rr.innerHTML = '<div class="empty-state"><p>ยังไม่มีการสมัคร</p></div>'; }
+  const regSnap = await db.collection('business_registrations')
+    .where('status','==','pending')
+    .orderBy('registeredAt','desc').limit(5).get();
+  if (regSnap.empty) { rr.innerHTML = '<div class="empty-state"><p>ไม่มีรายการรอ Approve</p></div>'; }
   else {
     rr.innerHTML = '';
     regSnap.docs.forEach(doc => {
       const d = doc.data();
-      rr.innerHTML += `<div class="info-row"><span class="info-label">${BIZ_TYPES[d.bizType]?.label||'?'} · ${d.bizData?.name||'-'}</span><span class="badge badge-${d.status}">${d.status==='pending'?'รอ Approve':d.status}</span></div>`;
+      rr.innerHTML += `<div class="info-row"><span class="info-label">${BIZ_TYPES[d.bizType]?.label||'?'} · ${d.bizData?.name||'-'}</span><span class="badge badge-pending">รอ Approve</span></div>`;
     });
   }
 }
@@ -1297,8 +1299,19 @@ async function loadUsers() {
 }
 
 async function approveUser(id) {
+  const doc = await db.collection('business_accounts').doc(id).get();
+  const email = doc.data()?.email;
+  // อัปเดต business_accounts
   await db.collection('business_accounts').doc(id).update({ status:'approved' });
+  // อัปเดต business_registrations ด้วย
+  if (email) {
+    const regSnap = await db.collection('business_registrations').where('email','==',email).get();
+    regSnap.docs.forEach(async d => {
+      await d.ref.update({ status: 'approved', approvedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    });
+  }
   loadUsers();
+  loadAdminData();
 }
 
 async function deleteUser(id) {
