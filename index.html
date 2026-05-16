@@ -337,18 +337,21 @@ tr:hover td{background:var(--gray-50);}
       <!-- ─── ADMIN: Places ─── -->
       <div class="page" id="page-adminPlaces">
         <div class="flex-between">
-          <div><div class="page-title">สถานที่ทั้งหมด</div><div class="page-sub">สถานที่ทุกประเภทใน PippoGO</div></div>
+          <div>
+            <div class="page-title">สถานที่ทั้งหมด <span id="placesTotalCount" style="font-size:16px;font-weight:400;color:var(--gray-500)"></span></div>
+            <div class="page-sub">สถานที่ทุกประเภทใน PippoGO</div>
+          </div>
           <button class="btn btn-primary btn-sm" onclick="openAddPlaceModal()">+ เพิ่มสถานที่</button>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-          <button class="btn-icon btn-view" onclick="filterPlaces('all')">ทั้งหมด</button>
-          <button class="btn-icon" style="background:var(--blue-light);color:var(--blue)" onclick="filterPlaces('hotel')">🏨 โรงแรม</button>
-          <button class="btn-icon" style="background:var(--orange-light);color:var(--orange)" onclick="filterPlaces('cafe')">🍽️ ร้านอาหาร</button>
-          <button class="btn-icon" style="background:#f3e8f7;color:#7B2D8B" onclick="filterPlaces('mall')">🏬 ห้าง</button>
-          <button class="btn-icon" style="background:var(--green-light);color:var(--green)" onclick="filterPlaces('attraction')">🌳 ท่องเที่ยว</button>
-          <button class="btn-icon" style="background:var(--red-light);color:var(--red)" onclick="filterPlaces('vet')">🏥 รพ.สัตว์</button>
-          <button class="btn-icon" style="background:var(--blue-light);color:#0C447C" onclick="filterPlaces('petshop')">🛍️ Pet Shop</button>
-          <button class="btn-icon" style="background:#efebe9;color:#5C4033" onclick="filterPlaces('boarding')">🏡 รับฝาก</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="placesFilterRow">
+          <button class="btn-icon btn-view" onclick="filterPlaces('all')" id="filter-all">ทั้งหมด</button>
+          <button class="btn-icon" style="background:var(--blue-light);color:var(--blue)" onclick="filterPlaces('hotel')" id="filter-hotel">🏨 โรงแรม</button>
+          <button class="btn-icon" style="background:var(--orange-light);color:var(--orange)" onclick="filterPlaces('cafe')" id="filter-cafe">🍽️ ร้านอาหาร</button>
+          <button class="btn-icon" style="background:#f3e8f7;color:#7B2D8B" onclick="filterPlaces('mall')" id="filter-mall">🏬 ห้าง</button>
+          <button class="btn-icon" style="background:var(--green-light);color:var(--green)" onclick="filterPlaces('attraction')" id="filter-attraction">🌳 ท่องเที่ยว</button>
+          <button class="btn-icon" style="background:var(--red-light);color:var(--red)" onclick="filterPlaces('vet')" id="filter-vet">🏥 รพ.สัตว์</button>
+          <button class="btn-icon" style="background:var(--blue-light);color:#0C447C" onclick="filterPlaces('petshop')" id="filter-petshop">🛍️ Pet Shop</button>
+          <button class="btn-icon" style="background:#efebe9;color:#5C4033" onclick="filterPlaces('boarding')" id="filter-boarding">🏡 รับฝาก</button>
         </div>
         <div id="placesList"><div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div></div>
       </div>
@@ -548,6 +551,23 @@ tr:hover td{background:var(--gray-50);}
     </div>
     <div class="modal-footer">
       <button class="btn btn-primary btn-sm" id="inviteAdminBtn" onclick="inviteAdmin()">เพิ่ม Admin</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Edit Place (Admin) -->
+<div class="modal-overlay" id="editPlaceModal">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-header">
+      <h3 id="editPlaceModalTitle">✏️ แก้ไขสถานที่</h3>
+      <button class="modal-close" onclick="closeModal('editPlaceModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="editPlaceMsg"></div>
+      <div id="editPlaceFormBody"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary btn-sm" onclick="saveEditPlace()">✓ บันทึกและขึ้นแอปทันที</button>
     </div>
   </div>
 </div>
@@ -1326,8 +1346,22 @@ async function loadPlaces(filter) {
   el.innerHTML = '<div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div>';
   let q = db.collection('places');
   if (filter !== 'all') q = q.where('category','==',filter);
-  const snap = await q.limit(100).get();
+  const snap = await q.limit(500).get();
   allPlacesCache = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+  
+  // Update filter button counts (only on 'all' load)
+  if (filter === 'all') {
+    const counts = {};
+    allPlacesCache.forEach(p => { counts[p.category] = (counts[p.category]||0) + 1; });
+    ['hotel','cafe','mall','attraction','vet','petshop','boarding'].forEach(cat => {
+      const btn = document.getElementById(`filter-${cat}`);
+      if (btn && counts[cat]) {
+        const label = btn.textContent.split('(')[0].trim();
+        btn.textContent = `${label} (${counts[cat]})`;
+      }
+    });
+  }
+  
   renderPlaces(allPlacesCache);
 }
 
@@ -1335,18 +1369,28 @@ function filterPlaces(cat) { loadPlaces(cat); }
 
 function renderPlaces(places) {
   const el = document.getElementById('placesList');
+  // Update count
+  const countEl = document.getElementById('placesTotalCount');
+  if (countEl) countEl.textContent = `(${places.length} สถานที่)`;
+  
   if (!places.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">📍</div><p>ไม่พบสถานที่</p></div>'; return; }
-  el.innerHTML = '<div class="card"><table><thead><tr><th>ประเภท</th><th>ชื่อ</th><th>จังหวัด</th><th>เบอร์</th><th>สถานะ</th><th></th></tr></thead><tbody id="placesTbody"></tbody></table></div>';
+  el.innerHTML = '<div class="card"><table><thead><tr><th>ประเภท</th><th>ชื่อ</th><th>จังหวัด</th><th>เบอร์</th><th>แก้ไขล่าสุด</th><th>สถานะ</th><th></th></tr></thead><tbody id="placesTbody"></tbody></table></div>';
   const tbody = document.getElementById('placesTbody');
   const catMap = { hotel:'🏨',cafe:'🍽️',mall:'🏬',attraction:'🌳',vet:'🏥',petshop:'🛍️',boarding:'🏡' };
   places.forEach(d => {
+    const lastEdit = d.lastEditedAt ? new Date(d.lastEditedAt.seconds*1000).toLocaleDateString('th-TH') : '-';
+    const lastEditor = d.lastEditedBy || '-';
     tbody.innerHTML += `<tr>
       <td>${catMap[d.category]||'📍'} ${d.category||'-'}</td>
       <td><strong>${d.name||'-'}</strong></td>
       <td>${d.province||'-'}</td>
       <td>${d.phone||'-'}</td>
+      <td style="font-size:11px;color:var(--gray-500)">${lastEdit !== '-' ? `${lastEdit}<br><span style="color:var(--blue)">${lastEditor}</span>` : '-'}</td>
       <td><span class="badge badge-approved">Live</span></td>
-      <td><button class="btn-icon btn-reject" onclick="deletePlace('${d.id}')">ลบ</button></td>
+      <td><div class="action-row">
+        <button class="btn-icon btn-view" onclick="openEditPlace('${d.id}')">✏️ แก้ไข</button>
+        <button class="btn-icon btn-reject" onclick="deletePlace('${d.id}')">ลบ</button>
+      </div></td>
     </tr>`;
   });
 }
@@ -1683,6 +1727,65 @@ async function adminAddBusiness() {
   btn.disabled = false; btn.textContent = '✓ เพิ่มและขึ้นแอปทันที';
 }
 
+
+// ─── Admin: Edit Place ───
+let editingPlaceId = null;
+let editingPlaceType = null;
+
+async function openEditPlace(id) {
+  editingPlaceId = id;
+  const doc = await db.collection('places').doc(id).get();
+  const d = doc.data();
+  editingPlaceType = d.category;
+  
+  document.getElementById('editPlaceModalTitle').textContent = `✏️ แก้ไข: ${d.name||'สถานที่'}`;
+  document.getElementById('editPlaceMsg').innerHTML = '';
+  document.getElementById('editPlaceFormBody').innerHTML = getBizForm(d.category, d);
+  
+  // Fill lat/lng if exists
+  if (d.location) {
+    setTimeout(() => {
+      const latEl = document.getElementById('bLat');
+      const lngEl = document.getElementById('bLng');
+      if (latEl) latEl.value = d.location.latitude || d.latitude || '';
+      if (lngEl) lngEl.value = d.location.longitude || d.longitude || '';
+    }, 100);
+  }
+  
+  openModal('editPlaceModal');
+}
+
+async function saveEditPlace() {
+  if (!editingPlaceId || !editingPlaceType) return;
+  const msgEl = document.getElementById('editPlaceMsg');
+  msgEl.innerHTML = '';
+  
+  const data = collectBizFormData(editingPlaceType);
+  if (!data.name) { msgEl.innerHTML = '<div class="error-msg">กรุณากรอกชื่อสถานที่</div>'; return; }
+  
+  // เพิ่ม metadata
+  data.sync_status = 'synced';
+  data.lastEditedBy = currentUser.email;
+  data.lastEditedAt = firebase.firestore.FieldValue.serverTimestamp();
+  
+  // เพิ่ม GeoPoint ถ้ามี lat/lng
+  const lat = parseFloat(document.getElementById('bLat')?.value) || 0;
+  const lng = parseFloat(document.getElementById('bLng')?.value) || 0;
+  if (lat && lng) {
+    data.location = new firebase.firestore.GeoPoint(lat, lng);
+    data.latitude = lat;
+    data.longitude = lng;
+  }
+  
+  try {
+    await db.collection('places').doc(editingPlaceId).update(data);
+    closeModal('editPlaceModal');
+    loadPlaces('all');
+    alert('✅ บันทึกสำเร็จ! ข้อมูลขึ้นแอปแล้ว');
+  } catch(e) {
+    msgEl.innerHTML = '<div class="error-msg">เกิดข้อผิดพลาด: ' + e.message + '</div>';
+  }
+}
 
 // ─── Admin: Add Place ───
 function openAddPlaceModal() {
