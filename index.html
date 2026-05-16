@@ -693,7 +693,31 @@ function getBizForm(type, d) {
         <div class="field"><label>เบอร์โทรศัพท์</label><input type="tel" id="bPhone" value="${d.phone||''}" placeholder="+66812345678"></div>
       </div>
       <div class="field"><label>ที่อยู่</label><input type="text" id="bAddress" value="${d.address||''}" placeholder="ที่อยู่เต็ม"></div>
-      <div class="field"><label>Google Maps URL</label><input type="url" id="bMapUrl" value="${d.googleMapUrl||''}" placeholder="https://maps.app.goo.gl/..."></div>
+      <div class="field"><label>Google Maps URL</label>
+        <div style="display:flex;gap:8px">
+          <input type="url" id="bMapUrl" value="${d.googleMapUrl||''}" placeholder="https://maps.app.goo.gl/..." oninput="tryParseLatLng()" style="flex:1">
+          <button type="button" onclick="previewOnMap()" style="padding:8px 12px;background:var(--blue);color:white;border:none;border-radius:var(--radius-sm);font-family:var(--font);font-size:12px;cursor:pointer;white-space:nowrap">🗺️ Preview</button>
+        </div>
+      </div>
+      <div class="form-section" style="background:var(--gray-100);padding:12px;border-radius:var(--radius-sm);margin-top:-8px">
+        <div style="font-size:12px;color:var(--gray-500);margin-bottom:8px">
+          📍 พิกัด GPS — ระบบจะพยายาม parse จาก URL อัตโนมัติ หรือกรอกเองได้
+          <span style="font-size:11px;display:block;margin-top:3px;color:var(--blue)">
+            วิธีหาพิกัด: เปิด Google Maps → คลิกขวาที่ร้าน → คัดลอกตัวเลขที่ขึ้นมา
+          </span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field" style="margin:0">
+            <label>Latitude (ละติจูด)</label>
+            <input type="number" id="bLat" value="${d.latitude||''}" placeholder="เช่น 13.7563" step="0.000001">
+          </div>
+          <div class="field" style="margin:0">
+            <label>Longitude (ลองจิจูด)</label>
+            <input type="number" id="bLng" value="${d.longitude||''}" placeholder="เช่น 100.5018" step="0.000001">
+          </div>
+        </div>
+        <div id="latLngStatus" style="font-size:11px;margin-top:6px;color:var(--gray-500)"></div>
+      </div>
     </div>
     <div class="form-section">
       <div class="form-section-title">⏰ เวลาเปิด-ปิด</div>
@@ -860,9 +884,12 @@ function collectBizFormData(type) {
   const g = id => { const el = document.getElementById(id); return el ? el.value : ''; };
   const gc = ids => ids.filter(id => { const el = document.getElementById(id); return el && el.checked; });
 
+  const latVal = parseFloat(g('bLat')) || 0;
+  const lngVal = parseFloat(g('bLng')) || 0;
   const base = {
     name: g('bName'), province: g('bProvince'), phone: g('bPhone'),
     address: g('bAddress'), googleMapUrl: g('bMapUrl'),
+    latitude: latVal, longitude: lngVal,
     openTime: g('bOpenTime'), closeTime: g('bCloseTime'), openNote: g('bOpenNote'),
     photo1: g('bPhoto1'), photo2: g('bPhoto2'), photo3: g('bPhoto3'),
     category: BIZ_TYPES[type].cat
@@ -1194,6 +1221,12 @@ async function openReview(id) {
 async function approveUpdate() {
   if (!currentReviewId || !currentReviewData) return;
   const data = { ...currentReviewData.data, sync_status: 'synced' };
+  // เพิ่ม GeoPoint ถ้ามี lat/lng
+  if (data.latitude && data.longitude && data.latitude != 0) {
+    data.location = new firebase.firestore.GeoPoint(
+      parseFloat(data.latitude), parseFloat(data.longitude)
+    );
+  }
   try {
     if (currentReviewData.bizId) {
       await db.collection('places').doc(currentReviewData.bizId).update(data);
@@ -1219,6 +1252,11 @@ async function quickApprove(id) {
   const doc = await db.collection('pending_updates').doc(id).get();
   const data = doc.data();
   const placeData = { ...data.data, sync_status:'synced' };
+  if (placeData.latitude && placeData.longitude && placeData.latitude != 0) {
+    placeData.location = new firebase.firestore.GeoPoint(
+      parseFloat(placeData.latitude), parseFloat(placeData.longitude)
+    );
+  }
   if (data.bizId) {
     await db.collection('places').doc(data.bizId).update(placeData);
   } else {
@@ -1664,6 +1702,62 @@ async function saveNewPlace() {
     loadAdminData();
     alert('✅ เพิ่มสถานที่สำเร็จ! ขึ้นแอปแล้ว');
   } catch(e) { msgEl.innerHTML = '<div class="error-msg">เกิดข้อผิดพลาด: ' + e.message + '</div>'; }
+}
+
+// ─── Lat/Lng Helpers ───
+function tryParseLatLng() {
+  const url = document.getElementById('bMapUrl')?.value || '';
+  const statusEl = document.getElementById('latLngStatus');
+  if (!statusEl) return;
+
+  // Pattern 1: @lat,lng
+  let m = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m) {
+    document.getElementById('bLat').value = m[1];
+    document.getElementById('bLng').value = m[2];
+    statusEl.textContent = '✅ พบพิกัดจาก URL อัตโนมัติ';
+    statusEl.style.color = 'var(--green)';
+    return;
+  }
+  // Pattern 2: ll=lat,lng
+  m = url.match(/ll=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m) {
+    document.getElementById('bLat').value = m[1];
+    document.getElementById('bLng').value = m[2];
+    statusEl.textContent = '✅ พบพิกัดจาก URL อัตโนมัติ';
+    statusEl.style.color = 'var(--green)';
+    return;
+  }
+  // Pattern 3: q=lat,lng
+  m = url.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m) {
+    document.getElementById('bLat').value = m[1];
+    document.getElementById('bLng').value = m[2];
+    statusEl.textContent = '✅ พบพิกัดจาก URL อัตโนมัติ';
+    statusEl.style.color = 'var(--green)';
+    return;
+  }
+  if (url.includes('maps.app.goo.gl') || url.includes('goo.gl/maps')) {
+    statusEl.textContent = '⚠️ Short URL — กรุณากรอก Latitude/Longitude เองด้านล่าง';
+    statusEl.style.color = 'var(--orange)';
+  } else {
+    statusEl.textContent = '';
+  }
+}
+
+function previewOnMap() {
+  const lat = document.getElementById('bLat')?.value;
+  const lng = document.getElementById('bLng')?.value;
+  const url = document.getElementById('bMapUrl')?.value;
+  const name = document.getElementById('bName')?.value || 'สถานที่';
+
+  if (lat && lng && lat != 0 && lng != 0) {
+    window.open(`https://www.google.com/maps?q=${lat},${lng}&z=16`, '_blank');
+  } else if (url) {
+    window.open(url, '_blank');
+  } else {
+    alert('กรุณากรอก Google Maps URL หรือ Latitude/Longitude ก่อน');
+  }
 }
 
 // ─── Utils ───
