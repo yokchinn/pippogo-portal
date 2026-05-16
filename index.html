@@ -1382,10 +1382,21 @@ async function deleteUser(id) {
 async function loadPlaces(filter) {
   const el = document.getElementById('placesList');
   el.innerHTML = '<div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div>';
-  let q = db.collection('places');
-  if (filter !== 'all') q = q.where('category','==',filter);
-  const snap = await q.limit(500).get();
-  allPlacesCache = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+
+  // ดึงข้อมูลแบบ pagination ทีละ 1000 จนครบทุก document
+  allPlacesCache = [];
+  let lastDoc = null;
+  while (true) {
+    let q = db.collection('places');
+    if (filter !== 'all') q = q.where('category','==',filter);
+    q = q.orderBy('__name__').limit(1000);
+    if (lastDoc) q = q.startAfter(lastDoc);
+    const snap = await q.get();
+    if (snap.empty) break;
+    allPlacesCache.push(...snap.docs.map(d => ({ id:d.id, ...d.data() })));
+    lastDoc = snap.docs[snap.docs.length - 1];
+    if (snap.docs.length < 1000) break;
+  }
   
   // Update filter button counts (only on 'all' load)
   if (filter === 'all') {
