@@ -778,10 +778,16 @@ function getBizForm(type, d) {
       <div class="form-section-title">📍 ข้อมูลพื้นฐาน</div>
       <div class="field"><label>ชื่อสถานที่ *</label><input type="text" id="bName" value="${d.name||''}" placeholder="ชื่อสถานที่ของคุณ"></div>
       <div class="field-row">
-        <div class="field"><label>จังหวัด *</label><select id="bProvince">
-          <option value="">-- เลือกจังหวัด --</option>
-          ${['กรุงเทพมหานคร','เชียงใหม่','เชียงราย','ขอนแก่น','ชลบุรี','นครราชสีมา','ภูเก็ต','สุราษฎร์ธานี','กระบี่','พระนครศรีอยุธยา','กาญจนบุรี','เลย','อุดรธานี','นครปฐม','ระยอง'].map(p=>`<option ${d.province===p?'selected':''}>${p}</option>`).join('')}
-        </select></div>
+        <div class="field"><label>จังหวัด *</label>
+          <div style="position:relative">
+            <input type="text" id="bProvince" value="${d.province||''}" placeholder="พิมพ์ค้นหาจังหวัด..." 
+              autocomplete="off"
+              oninput="showProvinceSuggestions(this)"
+              onfocus="showProvinceSuggestions(this)"
+              style="width:100%">
+            <div id="provinceSuggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1.5px solid var(--blue);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);max-height:200px;overflow-y:auto;z-index:100;box-shadow:var(--shadow)"></div>
+          </div>
+        </div>
         <div class="field"><label>เบอร์โทรศัพท์</label><input type="tel" id="bPhone" value="${d.phone||''}" placeholder="+66812345678"></div>
       </div>
       <div class="field"><label>ที่อยู่</label><input type="text" id="bAddress" value="${d.address||''}" placeholder="ที่อยู่เต็ม"></div>
@@ -2176,6 +2182,37 @@ function validatePhotos() {
   if (msgEl) msgEl.style.display = 'none';
   return true;
 }
+
+// ─── Province Search ───
+const ALL_PROVINCES = ['กรุงเทพมหานคร','กระบี่','กาญจนบุรี','กาฬสินธุ์','กำแพงเพชร','ขอนแก่น','จันทบุรี','ฉะเชิงเทรา','ชลบุรี','ชัยนาท','ชัยภูมิ','ชุมพร','เชียงราย','เชียงใหม่','ตรัง','ตราด','ตาก','นครนายก','นครปฐม','นครพนม','นครราชสีมา','นครศรีธรรมราช','นครสวรรค์','นนทบุรี','นราธิวาส','น่าน','บึงกาฬ','บุรีรัมย์','ปทุมธานี','ประจวบคีรีขันธ์','ปราจีนบุรี','ปัตตานี','พระนครศรีอยุธยา','พะเยา','พังงา','พัทลุง','พิจิตร','พิษณุโลก','เพชรบุรี','เพชรบูรณ์','แพร่','ภูเก็ต','มหาสารคาม','มุกดาหาร','แม่ฮ่องสอน','ยโสธร','ยะลา','ร้อยเอ็ด','ระนอง','ระยอง','ราชบุรี','ลพบุรี','ลำปาง','ลำพูน','เลย','ศรีสะเกษ','สกลนคร','สงขลา','สตูล','สมุทรปราการ','สมุทรสงคราม','สมุทรสาคร','สระแก้ว','สระบุรี','สิงห์บุรี','สุโขทัย','สุพรรณบุรี','สุราษฎร์ธานี','สุรินทร์','หนองคาย','หนองบัวลำภู','อ่างทอง','อำนาจเจริญ','อุดรธานี','อุตรดิตถ์','อุทัยธานี','อุบลราชธานี'];
+
+function showProvinceSuggestions(input) {
+  const q = input.value.toLowerCase().trim();
+  const box = document.getElementById('provinceSuggestions');
+  if (!box) return;
+  const matches = q ? ALL_PROVINCES.filter(p => p.includes(q) || p.toLowerCase().includes(q)) : ALL_PROVINCES;
+  if (!matches.length) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = matches.map(p => `
+    <div onclick="selectProvince('${p}', this.closest('[id=provinceSuggestions]'))" 
+      style="padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:0.5px solid var(--gray-200)"
+      onmouseover="this.style.background='var(--blue-light)'" 
+      onmouseout="this.style.background='white'">${p}</div>
+  `).join('');
+}
+
+function selectProvince(province, box) {
+  const input = document.getElementById('bProvince');
+  if (input) input.value = province;
+  if (box) box.style.display = 'none';
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#bProvince') && !e.target.closest('#provinceSuggestions')) {
+    const box = document.getElementById('provinceSuggestions');
+    if (box) box.style.display = 'none';
+  }
+});
 
 // ─── Lat/Lng Helpers ───
 function tryParseLatLng() {
