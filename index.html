@@ -182,6 +182,12 @@ tr:hover td{background:var(--gray-50);}
     .map-filter-btn.active { background: var(--blue); color: white; border-color: var(--blue); }
     .leaflet-container { font-family: var(--font) !important; }
 </style>
+  <!-- EmailJS -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script>
+    // !! เปลี่ยนเป็น EmailJS Public Key จริงหลังสมัครที่ emailjs.com !!
+    (function(){ emailjs.init({ publicKey: "YOUR_EMAILJS_PUBLIC_KEY" }); })();
+  </script>
   <!-- Leaflet Map -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -261,6 +267,15 @@ tr:hover td{background:var(--gray-50);}
       <!-- Step 3: บัญชี -->
       <div id="regStep3" style="display:none">
         <div id="regAccountError" class="error-msg" style="display:none"></div>
+        <div style="background:var(--blue-light);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--blue)">
+          👤 ข้อมูลสำหรับ Admin ติดต่อกลับ (ไม่แสดงในแอป)
+        </div>
+        <div class="field"><label>ชื่อคนติดต่อ *</label><input type="text" id="regContactName" placeholder="ชื่อ-นามสกุลผู้ประกอบการ"></div>
+        <div class="field-row">
+          <div class="field"><label>เบอร์โทรติดต่อ *</label><input type="tel" id="regContactPhone" placeholder="0812345678"></div>
+          <div class="field"><label>อีเมล์ติดต่อ *</label><input type="email" id="regContactEmail" placeholder="contact@business.com"></div>
+        </div>
+        <div style="border-top:1px solid var(--gray-200);margin:14px 0;padding-top:14px;font-size:12px;color:var(--gray-500)">🔐 ข้อมูลบัญชี Login</div>
         <div class="field"><label>อีเมลสำหรับ Login *</label><input type="email" id="regEmail" placeholder="your@email.com"></div>
         <div class="field"><label>รหัสผ่าน * (อย่างน้อย 8 ตัว)</label><input type="password" id="regPass" placeholder="ตั้งรหัสผ่านของคุณเอง"></div>
         <div class="field"><label>ยืนยันรหัสผ่าน *</label><input type="password" id="regPass2" placeholder="กรอกรหัสผ่านอีกครั้ง"></div>
@@ -301,6 +316,7 @@ tr:hover td{background:var(--gray-50);}
         <button class="nav-item" onclick="goPage('adminReview')"><span>⏳</span> รอ Approve <span id="pendingCount" style="background:var(--orange);color:white;border-radius:20px;padding:1px 7px;font-size:10px;margin-left:4px"></span></button>
         <button class="nav-item" onclick="goPage('adminUsers')"><span>👥</span> ผู้ประกอบการ</button>
         <button class="nav-item" onclick="goPage('adminPlaces')"><span>📍</span> สถานที่ทั้งหมด</button>
+        <button class="nav-item" onclick="goPage('adminContacts')"><span>📒</span> ผู้ประกอบการ</button>
         <button class="nav-item" onclick="goPage('adminBookings')"><span>📋</span> Bookings</button>
         <button class="nav-item superadmin-only" onclick="goPage('adminRevenue')"><span>💰</span> Revenue</button>
         <button class="nav-item superadmin-only" onclick="goPage('adminTeam')"><span>🛡️</span> จัดการ Admin</button>
@@ -428,6 +444,40 @@ tr:hover td{background:var(--gray-50);}
         <div id="placesList"><div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div></div>
       </div>
 
+      <!-- ─── ADMIN: Contacts ─── -->
+      <div class="page" id="page-adminContacts">
+        <div class="flex-between">
+          <div>
+            <div class="page-title">📒 ข้อมูลผู้ประกอบการ</div>
+            <div class="page-sub">รายชื่อผู้ประกอบการที่ติดต่อได้ — Admin เพิ่มได้เอง</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openAddContactModal()">+ เพิ่มผู้ประกอบการ</button>
+        </div>
+
+        <!-- Search -->
+        <div style="display:flex;gap:8px;margin-bottom:16px">
+          <div style="flex:1;position:relative">
+            <input type="text" id="contactSearch" placeholder="🔍 ค้นหาชื่อร้าน คนติดต่อ หรือประเภท..."
+              oninput="filterContacts()"
+              style="width:100%;padding:9px 14px 9px 36px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;outline:none"
+              onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--gray-200)'">
+            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gray-500)">🔍</span>
+          </div>
+          <select id="contactTypeFilter" onchange="filterContacts()"
+            style="padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;outline:none;min-width:160px">
+            <option value="">ทุกประเภท</option>
+            <option value="hotel">🏨 โรงแรม</option>
+            <option value="cafe">🍽️ ร้านอาหาร/คาเฟ่</option>
+            <option value="mall">🏬 ห้าง</option>
+            <option value="vet">🏥 รพ.สัตว์</option>
+            <option value="petshop">🛍️ Pet Shop</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+
+        <div id="contactList"><div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div></div>
+      </div>
+
       <!-- ─── ADMIN: Bookings ─── -->
       <div class="page" id="page-adminBookings">
         <div class="page-title">Bookings ทั้งหมด</div>
@@ -537,6 +587,37 @@ tr:hover td{background:var(--gray-50);}
   </div>
 </div>
 
+
+<!-- Modal: Send Email to Partner -->
+<div class="modal-overlay" id="emailPartnerModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h3>✉️ ส่งอีเมล์ถึงผู้ประกอบการ</h3>
+      <button class="modal-close" onclick="closeModal('emailPartnerModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="emailPartnerMsg"></div>
+      <div class="field">
+        <label>ถึง</label>
+        <input type="text" id="emailTo" readonly style="background:var(--gray-100);cursor:not-allowed">
+      </div>
+      <div class="field">
+        <label>หัวข้อ *</label>
+        <input type="text" id="emailSubject" placeholder="เช่น แจ้งข้อมูลเพิ่มเติมสำหรับ PippoGO">
+      </div>
+      <div class="field">
+        <label>ข้อความ *</label>
+        <textarea id="emailBody" style="min-height:120px" placeholder="พิมพ์ข้อความที่ต้องการส่ง..."></textarea>
+      </div>
+      <p style="font-size:11px;color:var(--gray-500);background:var(--gray-100);padding:8px;border-radius:6px">
+        📧 ส่งผ่าน EmailJS · ลูกค้าจะได้รับอีเมล์จาก PippoGO Admin
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary btn-sm" id="sendEmailBtn" onclick="doSendEmail()">✉️ ส่งอีเมล์</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal: Admin Add Business -->
 <div class="modal-overlay" id="addBizModal">
@@ -668,6 +749,64 @@ tr:hover td{background:var(--gray-50);}
     </div>
     <div class="modal-footer">
       <button class="btn btn-primary btn-sm" onclick="saveNewPlace()">✓ เพิ่มสถานที่ & ขึ้นแอปทันที</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add/Edit Contact -->
+<div class="modal-overlay" id="addContactModal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <h3 id="contactModalTitle">📒 เพิ่มผู้ประกอบการ</h3>
+      <button class="modal-close" onclick="closeModal('addContactModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="addContactMsg"></div>
+      <input type="hidden" id="editContactId">
+      <div class="field-row">
+        <div class="field">
+          <label>ประเภทธุรกิจ *</label>
+          <select id="cBizType" style="font-family:var(--font);font-size:14px;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);width:100%;outline:none">
+            <option value="">-- เลือกประเภท --</option>
+            <option value="hotel">🏨 โรงแรม</option>
+            <option value="cafe">🍽️ ร้านอาหาร/คาเฟ่</option>
+            <option value="mall">🏬 ห้าง</option>
+            <option value="vet">🏥 รพ.สัตว์</option>
+            <option value="petshop">🛍️ Pet Shop</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field"><label>ชื่อร้าน / สถานที่ *</label><input type="text" id="cBizName" placeholder="ชื่อสถานที่"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>ชื่อคนติดต่อ *</label><input type="text" id="cContactName" placeholder="ชื่อ-นามสกุล"></div>
+        <div class="field"><label>ตำแหน่ง</label><input type="text" id="cPosition" placeholder="เช่น เจ้าของ, ผู้จัดการ"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>เบอร์โทร *</label><input type="tel" id="cPhone" placeholder="0812345678"></div>
+        <div class="field"><label>อีเมล์</label><input type="email" id="cEmail" placeholder="contact@business.com"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>LINE ID</label><input type="text" id="cLine" placeholder="@lineId"></div>
+        <div class="field"><label>จังหวัด</label><input type="text" id="cProvince" placeholder="พิมพ์ค้นหาจังหวัด..."
+          oninput="showProvinceSuggestions(this)" onfocus="showProvinceSuggestions(this)" autocomplete="off">
+          <div id="provinceSuggestions" style="display:none;position:absolute;background:white;border:1.5px solid var(--blue);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);max-height:180px;overflow-y:auto;z-index:100;box-shadow:var(--shadow);min-width:200px"></div>
+        </div>
+      </div>
+      <div class="field"><label>หมายเหตุ / โน้ต</label><textarea id="cNote" placeholder="บันทึกเพิ่มเติม เช่น สนใจลงสถานที่ / นัดประชุม..." style="min-height:70px"></textarea></div>
+      <div class="field">
+        <label>สถานะการติดตาม</label>
+        <select id="cStatus" style="font-family:var(--font);font-size:14px;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);width:100%;outline:none">
+          <option value="prospect">🟡 Prospect — ยังไม่ได้ติดต่อ</option>
+          <option value="contacted">🔵 Contacted — ติดต่อแล้ว</option>
+          <option value="interested">🟢 Interested — สนใจแล้ว</option>
+          <option value="onboarded">✅ Onboarded — ลงแอปแล้ว</option>
+          <option value="declined">🔴 Declined — ปฏิเสธ</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary btn-sm" onclick="saveContact()">✓ บันทึก</button>
     </div>
   </div>
 </div>
@@ -1084,9 +1223,14 @@ async function handleRegister() {
     await auth.createUserWithEmailAndPassword(email, pass);
 
     // บันทึกใน business_registrations (รอ admin approve)
+    const contactName = document.getElementById('regContactName')?.value.trim() || '';
+    const contactPhone = document.getElementById('regContactPhone')?.value.trim() || '';
+    const contactEmail = document.getElementById('regContactEmail')?.value.trim() || email;
+
     await db.collection('business_registrations').add({
       email, bizType: selectedBizType,
       bizData,
+      contactName, contactPhone, contactEmail,
       status: 'pending',
       registeredAt: firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -1094,7 +1238,9 @@ async function handleRegister() {
     // บันทึกใน business_accounts
     await db.collection('business_accounts').add({
       email, bizType: selectedBizType,
-      bizName: bizData.name, status: 'pending',
+      bizName: bizData.name,
+      contactName, contactPhone, contactEmail,
+      status: 'pending',
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
@@ -1212,6 +1358,7 @@ function goPage(pageId) {
   if (pageId === 'adminUsers') loadUsers();
   if (pageId === 'adminPlaces') loadPlaces('all');
   if (pageId === 'adminBookings') loadAdminBookings();
+  if (pageId === 'adminContacts') loadContacts();
   if (pageId === 'adminRevenue') loadRevenue();
   if (pageId === 'adminTeam') loadAdminTeam();
   if (pageId === 'bizRooms') loadRooms();
@@ -1245,6 +1392,216 @@ async function submitBizUpdate() {
     msgEl.innerHTML = '<div class="success-msg">✅ ส่งข้อมูลสำเร็จ! Admin จะตรวจสอบภายใน 24 ชม.</div>';
     window.scrollTo(0,0);
   } catch(e) { msgEl.innerHTML = '<div class="error-msg">เกิดข้อผิดพลาด: ' + e.message + '</div>'; }
+}
+
+// ─── Email to Partner ───
+let emailPartnerTarget = {};
+
+function sendEmailToPartner(email, bizName, contactName) {
+  emailPartnerTarget = { email, bizName, contactName };
+  document.getElementById('emailTo').value = `${contactName} <${email}> — ${bizName}`;
+  document.getElementById('emailSubject').value = '';
+  document.getElementById('emailBody').value = '';
+  document.getElementById('emailPartnerMsg').innerHTML = '';
+  openModal('emailPartnerModal');
+}
+
+async function doSendEmail() {
+  const subject = document.getElementById('emailSubject').value.trim();
+  const body = document.getElementById('emailBody').value.trim();
+  const msgEl = document.getElementById('emailPartnerMsg');
+  const btn = document.getElementById('sendEmailBtn');
+
+  if (!subject || !body) {
+    msgEl.innerHTML = '<div class="error-msg">กรุณากรอกหัวข้อและข้อความ</div>';
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'กำลังส่ง...';
+  msgEl.innerHTML = '';
+
+  try {
+    // !! เปลี่ยน SERVICE_ID และ TEMPLATE_ID จาก EmailJS Dashboard !!
+    await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', {
+      to_email: emailPartnerTarget.email,
+      to_name: emailPartnerTarget.contactName,
+      biz_name: emailPartnerTarget.bizName,
+      subject: subject,
+      message: body,
+      from_name: 'PippoGO Admin',
+      reply_to: currentUser.email
+    });
+
+    msgEl.innerHTML = '<div class="success-msg">✅ ส่งอีเมล์สำเร็จแล้ว!</div>';
+    setTimeout(() => closeModal('emailPartnerModal'), 1500);
+  } catch(e) {
+    msgEl.innerHTML = `<div class="error-msg">ส่งไม่สำเร็จ: ${e.text || e.message || 'กรุณาตั้งค่า EmailJS ก่อน'}</div>`;
+  }
+
+  btn.disabled = false; btn.textContent = '✉️ ส่งอีเมล์';
+}
+
+// ─── Contacts (ผู้ประกอบการ) ───
+let allContactsCache = [];
+let editingContactId = null;
+
+const statusConfig = {
+  prospect:  { label: 'Prospect',   color: '#BA7517', bg: '#fff8e6' },
+  contacted: { label: 'Contacted',  color: '#2561E4', bg: '#EBF1FD' },
+  interested:{ label: 'Interested', color: '#1a6b35', bg: '#e3f5e9' },
+  onboarded: { label: 'Onboarded',  color: '#1a6b35', bg: '#e3f5e9' },
+  declined:  { label: 'Declined',   color: '#b00020', bg: '#fdecea' }
+};
+
+const bizTypeMap = { hotel:'🏨 โรงแรม', cafe:'🍽️ ร้านอาหาร', mall:'🏬 ห้าง', vet:'🏥 รพ.สัตว์', petshop:'🛍️ Pet Shop', other:'อื่นๆ' };
+
+async function loadContacts() {
+  const el = document.getElementById('contactList');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div>';
+  const snap = await db.collection('partner_contacts').orderBy('createdAt','desc').get();
+  allContactsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderContacts(allContactsCache);
+}
+
+function filterContacts() {
+  const q = (document.getElementById('contactSearch')?.value || '').toLowerCase();
+  const type = document.getElementById('contactTypeFilter')?.value || '';
+  const filtered = allContactsCache.filter(c => {
+    const matchQ = !q || (c.bizName||'').toLowerCase().includes(q) ||
+      (c.contactName||'').toLowerCase().includes(q) || (c.province||'').toLowerCase().includes(q);
+    const matchType = !type || c.bizType === type;
+    return matchQ && matchType;
+  });
+  renderContacts(filtered);
+}
+
+function renderContacts(contacts) {
+  const el = document.getElementById('contactList');
+  if (!contacts.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📒</div><p>ยังไม่มีผู้ประกอบการ<br><span style="font-size:12px">กด "+ เพิ่มผู้ประกอบการ" เพื่อเริ่มเพิ่มข้อมูล</span></p></div>';
+    return;
+  }
+  el.innerHTML = `<div class="card" style="padding:0;overflow:hidden">
+    <table>
+      <thead><tr>
+        <th>ประเภท / ร้าน</th>
+        <th>คนติดต่อ</th>
+        <th>เบอร์ / อีเมล์</th>
+        <th>LINE / จังหวัด</th>
+        <th>สถานะ</th>
+        <th>Action</th>
+      </tr></thead>
+      <tbody id="contactTbody"></tbody>
+    </table>
+  </div>
+  <div style="font-size:12px;color:var(--gray-500);margin-top:8px">รวม ${contacts.length} รายการ</div>`;
+
+  const tbody = document.getElementById('contactTbody');
+  contacts.forEach(c => {
+    const st = statusConfig[c.status] || statusConfig.prospect;
+    const dt = c.createdAt?.toDate ? c.createdAt.toDate().toLocaleDateString('th-TH') : '-';
+    tbody.innerHTML += `<tr>
+      <td>
+        <div style="font-size:11px;color:var(--gray-500)">${bizTypeMap[c.bizType]||c.bizType||'-'}</div>
+        <strong>${c.bizName||'-'}</strong>
+        ${c.position ? `<div style="font-size:11px;color:var(--gray-500)">${c.position}</div>` : ''}
+      </td>
+      <td><strong>${c.contactName||'-'}</strong><div style="font-size:11px;color:var(--gray-500)">${dt}</div></td>
+      <td>
+        ${c.phone ? `<div><a href="tel:${c.phone}" style="color:var(--blue);text-decoration:none;font-size:13px">📞 ${c.phone}</a></div>` : ''}
+        ${c.email ? `<div><a href="mailto:${c.email}" style="color:var(--gray-500);text-decoration:none;font-size:12px">✉️ ${c.email}</a></div>` : ''}
+      </td>
+      <td>
+        ${c.line ? `<div style="font-size:12px">💬 ${c.line}</div>` : ''}
+        ${c.province ? `<div style="font-size:12px;color:var(--gray-500)">📍 ${c.province}</div>` : ''}
+      </td>
+      <td>
+        <span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;background:${st.bg};color:${st.color}">${st.label}</span>
+        ${c.note ? `<div style="font-size:10px;color:var(--gray-500);margin-top:3px;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${c.note}">📝 ${c.note}</div>` : ''}
+      </td>
+      <td><div class="action-row">
+        ${c.email ? `<button class="btn-icon btn-view" onclick="sendEmailToPartner('${c.email}','${c.bizName||''}','${c.contactName||''}')" title="ส่งอีเมล์">✉️</button>` : ''}
+        <button class="btn-icon btn-view" onclick="openEditContact('${c.id}')" title="แก้ไข">✏️</button>
+        <button class="btn-icon btn-reject" onclick="deleteContact('${c.id}')" title="ลบ">ลบ</button>
+      </div></td>
+    </tr>`;
+  });
+}
+
+function openAddContactModal() {
+  editingContactId = null;
+  document.getElementById('contactModalTitle').textContent = '📒 เพิ่มผู้ประกอบการ';
+  ['cBizType','cBizName','cContactName','cPosition','cPhone','cEmail','cLine','cProvince','cNote'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('cStatus').value = 'prospect';
+  document.getElementById('editContactId').value = '';
+  document.getElementById('addContactMsg').innerHTML = '';
+  openModal('addContactModal');
+}
+
+async function openEditContact(id) {
+  const doc = await db.collection('partner_contacts').doc(id).get();
+  const d = doc.data();
+  editingContactId = id;
+  document.getElementById('contactModalTitle').textContent = '✏️ แก้ไขผู้ประกอบการ';
+  document.getElementById('editContactId').value = id;
+  document.getElementById('cBizType').value = d.bizType || '';
+  document.getElementById('cBizName').value = d.bizName || '';
+  document.getElementById('cContactName').value = d.contactName || '';
+  document.getElementById('cPosition').value = d.position || '';
+  document.getElementById('cPhone').value = d.phone || '';
+  document.getElementById('cEmail').value = d.email || '';
+  document.getElementById('cLine').value = d.line || '';
+  document.getElementById('cProvince').value = d.province || '';
+  document.getElementById('cNote').value = d.note || '';
+  document.getElementById('cStatus').value = d.status || 'prospect';
+  document.getElementById('addContactMsg').innerHTML = '';
+  openModal('addContactModal');
+}
+
+async function saveContact() {
+  const msgEl = document.getElementById('addContactMsg');
+  const bizName = document.getElementById('cBizName').value.trim();
+  const contactName = document.getElementById('cContactName').value.trim();
+  const phone = document.getElementById('cPhone').value.trim();
+  if (!bizName || !contactName || !phone) {
+    msgEl.innerHTML = '<div class="error-msg">กรุณากรอกชื่อร้าน ชื่อคนติดต่อ และเบอร์โทร</div>';
+    return;
+  }
+  const data = {
+    bizType: document.getElementById('cBizType').value,
+    bizName,
+    contactName,
+    position: document.getElementById('cPosition').value.trim(),
+    phone,
+    email: document.getElementById('cEmail').value.trim(),
+    line: document.getElementById('cLine').value.trim(),
+    province: document.getElementById('cProvince').value.trim(),
+    note: document.getElementById('cNote').value.trim(),
+    status: document.getElementById('cStatus').value,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  try {
+    if (editingContactId) {
+      await db.collection('partner_contacts').doc(editingContactId).update(data);
+    } else {
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      data.addedBy = currentUser.email;
+      await db.collection('partner_contacts').add(data);
+    }
+    closeModal('addContactModal');
+    loadContacts();
+  } catch(e) {
+    msgEl.innerHTML = `<div class="error-msg">เกิดข้อผิดพลาด: ${e.message}</div>`;
+  }
+}
+
+async function deleteContact(id) {
+  if (!confirm('ลบผู้ประกอบการนี้?')) return;
+  await db.collection('partner_contacts').doc(id).delete();
+  loadContacts();
 }
 
 // ─── Admin: Load Data ───
@@ -1407,17 +1764,27 @@ async function loadUsers() {
   el.innerHTML = '<div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div>';
   const snap = await db.collection('business_accounts').orderBy('createdAt','desc').get();
   if (snap.empty) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">👥</div><p>ยังไม่มีผู้ประกอบการ</p></div>'; return; }
-  el.innerHTML = '<div class="card"><table><thead><tr><th>ประเภท</th><th>ชื่อธุรกิจ</th><th>อีเมล</th><th>สถานะ</th><th>Action</th></tr></thead><tbody id="userTbody"></tbody></table></div>';
+  el.innerHTML = '<div class="card"><table><thead><tr><th>ประเภท</th><th>ชื่อธุรกิจ / ผู้ติดต่อ</th><th>อีเมล / เบอร์</th><th>สถานะ</th><th>Action</th></tr></thead><tbody id="userTbody"></tbody></table></div>';
   const tbody = document.getElementById('userTbody');
   snap.docs.forEach(doc => {
     const d = doc.data();
+    const contactName = d.contactName || '-';
+    const contactPhone = d.contactPhone || '-';
+    const contactEmail = d.contactEmail || d.email;
     tbody.innerHTML += `<tr>
       <td>${BIZ_TYPES[d.bizType]?.label||d.bizType||'-'}</td>
-      <td><strong>${d.bizName||'-'}</strong></td>
-      <td>${d.email}</td>
+      <td>
+        <strong>${d.bizName||'-'}</strong>
+        <div style="font-size:11px;color:var(--gray-500);margin-top:2px">👤 ${contactName}</div>
+      </td>
+      <td>
+        <div style="font-size:12px">${contactEmail}</div>
+        <div style="font-size:11px;color:var(--gray-500)">${contactPhone}</div>
+      </td>
       <td><span class="badge badge-${d.status==='approved'?'approved':d.status==='pending'?'pending':'rejected'}">${d.status==='approved'?'Approved':d.status==='pending'?'รอ Approve':'Rejected'}</span></td>
       <td><div class="action-row">
         ${d.status==='pending'?`<button class="btn-icon btn-approve" onclick="approveUser('${doc.id}')">✓ Approve</button>`:''}
+        <button class="btn-icon btn-view" onclick="sendEmailToPartner('${contactEmail}','${d.bizName||''}','${contactName}')" title="ส่งอีเมล์">✉️</button>
         <button class="btn-icon btn-reject" onclick="deleteUser('${doc.id}')">ลบ</button>
       </div></td>
     </tr>`;
