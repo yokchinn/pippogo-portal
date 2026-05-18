@@ -270,7 +270,7 @@ tr:hover td{background:var(--gray-50);}
         <div style="background:var(--blue-light);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--blue)">
           👤 ข้อมูลสำหรับ Admin ติดต่อกลับ (ไม่แสดงในแอป)
         </div>
-        <div class="field"><label>ชื่อคนติดต่อ *</label><input type="text" id="regContactName" placeholder="ชื่อ-นามสกุลผู้ประกอบการ"></div>
+        <div class="field"><label>ชื่อคนติดต่อ</label><input type="text" id="regContactName" placeholder="ชื่อ-นามสกุลผู้ประกอบการ"></div>
         <div class="field-row">
           <div class="field"><label>เบอร์โทรติดต่อ *</label><input type="tel" id="regContactPhone" placeholder="0812345678"></div>
           <div class="field"><label>อีเมล์ติดต่อ *</label><input type="email" id="regContactEmail" placeholder="contact@business.com"></div>
@@ -779,11 +779,11 @@ tr:hover td{background:var(--gray-50);}
         <div class="field"><label>ชื่อร้าน / สถานที่ *</label><input type="text" id="cBizName" placeholder="ชื่อสถานที่"></div>
       </div>
       <div class="field-row">
-        <div class="field"><label>ชื่อคนติดต่อ *</label><input type="text" id="cContactName" placeholder="ชื่อ-นามสกุล"></div>
+        <div class="field"><label>ชื่อคนติดต่อ</label><input type="text" id="cContactName" placeholder="ชื่อ-นามสกุล"></div>
         <div class="field"><label>ตำแหน่ง</label><input type="text" id="cPosition" placeholder="เช่น เจ้าของ, ผู้จัดการ"></div>
       </div>
       <div class="field-row">
-        <div class="field"><label>เบอร์โทร *</label><input type="tel" id="cPhone" placeholder="0812345678"></div>
+        <div class="field"><label>เบอร์โทร</label><input type="tel" id="cPhone" placeholder="0812345678"></div>
         <div class="field"><label>อีเมล์</label><input type="email" id="cEmail" placeholder="contact@business.com"></div>
       </div>
       <div class="field-row">
@@ -1566,8 +1566,8 @@ async function saveContact() {
   const bizName = document.getElementById('cBizName').value.trim();
   const contactName = document.getElementById('cContactName').value.trim();
   const phone = document.getElementById('cPhone').value.trim();
-  if (!bizName || !contactName || !phone) {
-    msgEl.innerHTML = '<div class="error-msg">กรุณากรอกชื่อร้าน ชื่อคนติดต่อ และเบอร์โทร</div>';
+  if (!bizName) {
+    msgEl.innerHTML = '<div class="error-msg">กรุณากรอกชื่อร้าน / สถานที่</div>';
     return;
   }
   const data = {
