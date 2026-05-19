@@ -764,7 +764,19 @@ function collectBizFormData(type){
   const g=id=>{const el=document.getElementById(id);return el?el.value:''};
   const gc=ids=>ids.filter(id=>{const el=document.getElementById(id);return el&&el.checked});
   const latVal=parseFloat(g('bLat'))||0,lngVal=parseFloat(g('bLng'))||0;
-  const base={name:g('bName'),province:g('bProvince'),phone:g('bPhone'),address:g('bAddress'),googleMapUrl:g('bMapUrl'),latitude:latVal,longitude:lngVal,openTime:g('bOpenTime'),closeTime:g('bCloseTime'),openNote:g('bOpenNote'),photo1:getPhotoUrls()[0]||'',photo2:getPhotoUrls()[1]||'',photo3:getPhotoUrls()[2]||'',photos:getPhotoUrls(),category:BIZ_TYPES[type].cat};
+  // collect hours per day
+const days=['mon','tue','wed','thu','fri','sat','sun'];
+const hours={};
+days.forEach(d=>{
+  const cb=document.getElementById('open-'+d);
+  const isOpen=cb?cb.checked:true;
+  hours[d]={
+    open:isOpen,
+    openTime:document.getElementById('open-t-'+d)?.value||'09:00',
+    closeTime:document.getElementById('close-t-'+d)?.value||'21:00'
+  };
+});
+const base={name:g('bName'),province:g('bProvince'),phone:g('bPhone'),address:g('bAddress'),googleMapUrl:g('bMapUrl'),latitude:latVal,longitude:lngVal,defaultOpenTime:g('bDefaultOpen'),defaultCloseTime:g('bDefaultClose'),openNote:g('bOpenNote'),hours:hours,photo1:getPhotoUrls()[0]||'',photo2:getPhotoUrls()[1]||'',photo3:getPhotoUrls()[2]||'',photos:getPhotoUrls(),category:BIZ_TYPES[type].cat};
   const extras={
     hotel:()=>({allowedPetTypes:g('bPetTypes'),maxPetWeight:g('bMaxWeight'),maxPetCount:g('bMaxPets'),petFeePerNight:g('bPetFee'),petDeposit:g('bPetDeposit'),checkInTime:g('bCheckIn'),checkOutTime:g('bCheckOut'),cancellationPolicy:g('bCancel'),amenities:Array.from(document.querySelectorAll('.amenity-cb:checked')).map(c=>c.value).join(','),extraGuestFeePerNight:'500',baseGuests:'2'}),
     cafe:()=>({indoorOutdoor:g('bIndoorOutdoor'),subType:g('bSubType'),description:g('bDesc'),petPolicy:gc(['cLeash','cStroller','cAllPets','cDogOnly']).join(','),petDetail:g('bPetDetail')}),
@@ -1451,6 +1463,61 @@ function removePhotoRow(btn){btn.closest('.photo-url-row').remove();}
 function previewPhoto(input){const thumb=input.parentElement.querySelector('.photo-preview-thumb');if(!thumb)return;const url=input.value.trim();if(url){if(thumb.tagName==='IMG'){thumb.src=url;thumb.style.display='';}else{const img=document.createElement('img');img.src=url;img.style.cssText='position:absolute;right:8px;top:50%;transform:translateY(-50%);width:28px;height:28px;object-fit:cover;border-radius:4px;border:1px solid var(--gray-200)';img.className='photo-preview-thumb';img.onerror=()=>img.style.display='none';thumb.replaceWith(img);}}}
 function getPhotoUrls(){const inputs=document.querySelectorAll('#photoUrlList .photo-url-input');return Array.from(inputs).map(i=>i.value.trim()).filter(Boolean);}
 function validatePhotos(){const photos=getPhotoUrls();const msgEl=document.getElementById('photoValidationMsg');if(photos.length<3){if(msgEl)msgEl.style.display='block';return false;}if(msgEl)msgEl.style.display='none';return true;}
+
+// ─── Hours Helpers ───
+function toggleDayHours(day){
+  const cb=document.getElementById('open-'+day);
+  const timeDiv=document.getElementById('time-'+day);
+  const closedDiv=document.getElementById('closed-'+day);
+  if(!cb||!timeDiv||!closedDiv)return;
+  if(cb.checked){
+    timeDiv.style.opacity='1';timeDiv.style.pointerEvents='auto';
+    closedDiv.style.display='none';
+  }else{
+    timeDiv.style.opacity='.3';timeDiv.style.pointerEvents='none';
+    closedDiv.style.display='flex';
+  }
+}
+
+function syncDefaultTime(){
+  const openT=document.getElementById('bDefaultOpen')?.value||'09:00';
+  const closeT=document.getElementById('bDefaultClose')?.value||'21:00';
+  ['mon','tue','wed','thu','fri','sat','sun'].forEach(d=>{
+    const cb=document.getElementById('open-'+d);
+    if(cb&&cb.checked){
+      const ot=document.getElementById('open-t-'+d);
+      const ct=document.getElementById('close-t-'+d);
+      if(ot)ot.value=openT;
+      if(ct)ct.value=closeT;
+    }
+  });
+}
+
+function applyHoursPreset(preset){
+  const days=['mon','tue','wed','thu','fri','sat','sun'];
+  const openT=document.getElementById('bDefaultOpen')?.value||'09:00';
+  const closeT=document.getElementById('bDefaultClose')?.value||'21:00';
+  const weekdays=['mon','tue','wed','thu','fri'];
+  const weekend=['sat','sun'];
+
+  const setDay=(d,isOpen)=>{
+    const cb=document.getElementById('open-'+d);
+    if(cb){cb.checked=isOpen;toggleDayHours(d);}
+  };
+
+  if(preset==='everyday') days.forEach(d=>setDay(d,true));
+  else if(preset==='weekday'){weekdays.forEach(d=>setDay(d,true));weekend.forEach(d=>setDay(d,false));}
+  else if(preset==='weekend'){weekend.forEach(d=>setDay(d,true));weekdays.forEach(d=>setDay(d,false));}
+  else if(preset==='except_mon'){days.forEach(d=>setDay(d,true));setDay('mon',false);}
+
+  // highlight active preset button
+  document.querySelectorAll('[onclick^="applyHoursPreset"]').forEach(btn=>{
+    btn.style.background='white';btn.style.borderColor='var(--gray-200)';btn.style.color='var(--gray-700)';
+  });
+  event.target.style.background='var(--blue-light)';
+  event.target.style.borderColor='var(--blue)';
+  event.target.style.color='var(--blue)';
+}
 
 // ─── Province Autocomplete (universal) ───
 const ALL_PROVINCES=['กรุงเทพมหานคร','กระบี่','กาญจนบุรี','กาฬสินธุ์','กำแพงเพชร','ขอนแก่น','จันทบุรี','ฉะเชิงเทรา','ชลบุรี','ชัยนาท','ชัยภูมิ','ชุมพร','เชียงราย','เชียงใหม่','ตรัง','ตราด','ตาก','นครนายก','นครปฐม','นครพนม','นครราชสีมา','นครศรีธรรมราช','นครสวรรค์','นนทบุรี','นราธิวาส','น่าน','บึงกาฬ','บุรีรัมย์','ปทุมธานี','ประจวบคีรีขันธ์','ปราจีนบุรี','ปัตตานี','พระนครศรีอยุธยา','พะเยา','พังงา','พัทลุง','พิจิตร','พิษณุโลก','เพชรบุรี','เพชรบูรณ์','แพร่','ภูเก็ต','มหาสารคาม','มุกดาหาร','แม่ฮ่องสอน','ยโสธร','ยะลา','ร้อยเอ็ด','ระนอง','ระยอง','ราชบุรี','ลพบุรี','ลำปาง','ลำพูน','เลย','ศรีสะเกษ','สกลนคร','สงขลา','สตูล','สมุทรปราการ','สมุทรสงคราม','สมุทรสาคร','สระแก้ว','สระบุรี','สิงห์บุรี','สุโขทัย','สุพรรณบุรี','สุราษฎร์ธานี','สุรินทร์','หนองคาย','หนองบัวลำภู','อ่างทอง','อำนาจเจริญ','อุดรธานี','อุตรดิตถ์','อุทัยธานี','อุบลราชธานี'];
