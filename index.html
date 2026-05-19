@@ -1018,7 +1018,7 @@ async function sendViaEmailJS(toEmail, toName, subject, message){
 
 // ── กดส่ง ──
 async function doSendEmail(){
-  const subject=document.getElementById('emailSubject').value.trim();
+  let subject=document.getElementById('emailSubject').value.trim();
   const bodyRaw=document.getElementById('emailBody').value.trim();
   const attachUrl=document.getElementById('emailAttachment').value.trim();
   const msgEl=document.getElementById('emailPartnerMsg');
@@ -1034,8 +1034,9 @@ async function doSendEmail(){
       for(let i=0;i<bulkRecipients.length;i++){
         const r=bulkRecipients[i];
         const body=bodyRaw.replace(/{{ชื่อ}}/g,r.name||r.bizName).replace(/{{ชื่อร้าน}}/g,r.bizName);
+        const subjectFinal=subject.replace(/{{ชื่อ}}/g,r.name||r.bizName).replace(/{{ชื่อร้าน}}/g,r.bizName);
         try{
-          await sendViaEmailJS(r.email,r.name||r.bizName,subject,body);
+          await sendViaEmailJS(r.email,r.name||r.bizName,subjectFinal,body);
           ok++;
           // อัปเดต status → contacted
           const snap=await db.collection('partner_contacts').where('bizName','==',r.bizName).limit(1).get();
@@ -1053,7 +1054,8 @@ async function doSendEmail(){
     }else{
       // ── single send ──
       const body=bodyRaw.replace(/{{ชื่อ}}/g,emailPartnerTarget.contactName||emailPartnerTarget.bizName).replace(/{{ชื่อร้าน}}/g,emailPartnerTarget.bizName);
-      await sendViaEmailJS(emailPartnerTarget.email,emailPartnerTarget.contactName||emailPartnerTarget.bizName,subject,body);
+      const subjectFinal=subject.replace(/{{ชื่อ}}/g,emailPartnerTarget.contactName||emailPartnerTarget.bizName).replace(/{{ชื่อร้าน}}/g,emailPartnerTarget.bizName);
+      await sendViaEmailJS(emailPartnerTarget.email,emailPartnerTarget.contactName||emailPartnerTarget.bizName,subjectFinal,body);
       // อัปเดต status
       const snap=await db.collection('partner_contacts').where('bizName','==',emailPartnerTarget.bizName).limit(1).get();
       if(!snap.empty&&snap.docs[0].data().status==='prospect'){
