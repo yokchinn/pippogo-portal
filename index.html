@@ -130,7 +130,7 @@ tr:hover td{background:var(--gray-50);}
 .leaflet-container{font-family:var(--font)!important;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script>(function(){ emailjs.init({ publicKey: "YOUR_EMAILJS_PUBLIC_KEY" }); })();</script>
+<script>(function(){ emailjs.init({ publicKey: "ts5_19RUIow4tZz9H" }); })();</script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
@@ -633,8 +633,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 const ADMIN_EMAILS = ['admin@pippogo.com','seth@pippogo.com','yok-chinn@hotmail.com'];
-const BREVO_API_KEY = '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';
-const BREVO_SENDER = { name: 'PippoGO', email: 'team.pippogo@gmail.com' };
+// EmailJS: service_o9v09xs | template_7h1kr2o | ts5_19RUIow4tZz9H
 let currentUser=null,currentRole=null,currentBizType=null,currentBizId=null,currentReviewId=null,currentReviewData=null;
 let editRoomId=null,allPlacesCache=[];
 const BIZ_TYPES = {
@@ -874,7 +873,7 @@ async function submitBizUpdate(){
   }catch(e){msgEl.innerHTML='<div class="error-msg">เกิดข้อผิดพลาด: '+e.message+'</div>';}
 }
 
-// ─── Brevo Email System ───
+// ─── EmailJS System ───
 let emailPartnerTarget={};
 let isBulkMode=false;
 let bulkRecipients=[];
@@ -982,24 +981,15 @@ PippoGO มีโปรโมชันพิเศษสำหรับพาร
   }
 }
 
-// ── core: ส่งผ่าน Brevo API ──
-async function sendViaBrevo(toEmail, toName, subject, htmlBody, attachmentUrl=''){
-  const payload={
-    sender: BREVO_SENDER,
-    to: [{email:toEmail, name:toName}],
+// ── core: ส่งผ่าน EmailJS ──
+async function sendViaEmailJS(toEmail, toName, subject, message){
+  return await emailjs.send('service_o9v09xs', 'template_7h1kr2o', {
+    to_email: toEmail,
+    to_name: toName,
     subject: subject,
-    htmlContent: htmlBody.split('\n').join('<br>')
-  };
-  if(attachmentUrl){
-    payload.attachment=[{url:attachmentUrl, name:'document.pdf'}];
-  }
-  const res=await fetch('https://api.brevo.com/v3/smtp/email',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','api-key':BREVO_API_KEY},
-    body:JSON.stringify(payload)
+    message: message,
+    email: toEmail
   });
-  if(!res.ok){const err=await res.json();throw new Error(err.message||'Brevo error');}
-  return await res.json();
 }
 
 // ── กดส่ง ──
@@ -1021,7 +1011,7 @@ async function doSendEmail(){
         const r=bulkRecipients[i];
         const body=bodyRaw.replace(/{{ชื่อ}}/g,r.name||r.bizName).replace(/{{ชื่อร้าน}}/g,r.bizName);
         try{
-          await sendViaBrevo(r.email,r.name||r.bizName,subject,body,attachUrl);
+          await sendViaEmailJS(r.email,r.name||r.bizName,subject,body);
           ok++;
           // อัปเดต status → contacted
           const snap=await db.collection('partner_contacts').where('bizName','==',r.bizName).limit(1).get();
@@ -1039,7 +1029,7 @@ async function doSendEmail(){
     }else{
       // ── single send ──
       const body=bodyRaw.replace(/{{ชื่อ}}/g,emailPartnerTarget.contactName||emailPartnerTarget.bizName).replace(/{{ชื่อร้าน}}/g,emailPartnerTarget.bizName);
-      await sendViaBrevo(emailPartnerTarget.email,emailPartnerTarget.contactName||emailPartnerTarget.bizName,subject,body,attachUrl);
+      await sendViaEmailJS(emailPartnerTarget.email,emailPartnerTarget.contactName||emailPartnerTarget.bizName,subject,body);
       // อัปเดต status
       const snap=await db.collection('partner_contacts').where('bizName','==',emailPartnerTarget.bizName).limit(1).get();
       if(!snap.empty&&snap.docs[0].data().status==='prospect'){
