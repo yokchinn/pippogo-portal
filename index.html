@@ -130,7 +130,7 @@ tr:hover td{background:var(--gray-50);}
 .leaflet-container{font-family:var(--font)!important;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script>(function(){ emailjs.init({ publicKey: "ts5_19RUIow4tZz9H" }); })();</script>
+<script>(function(){ emailjs.init({ publicKey: "YOUR_EMAILJS_PUBLIC_KEY" }); })();</script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
@@ -633,7 +633,8 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 const ADMIN_EMAILS = ['admin@pippogo.com','seth@pippogo.com','yok-chinn@hotmail.com'];
-// EmailJS: service_o9v09xs | template_7h1kr2o | ts5_19RUIow4tZz9H
+const BREVO_API_KEY = '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';
+const BREVO_SENDER = { name: 'PippoGO', email: 'yokchinn@gmail.com' };
 let currentUser=null,currentRole=null,currentBizType=null,currentBizId=null,currentReviewId=null,currentReviewData=null;
 let editRoomId=null,allPlacesCache=[];
 const BIZ_TYPES = {
@@ -684,13 +685,7 @@ function getBizForm(type,d){
       <div id="latLngStatus" style="font-size:11px;margin-top:6px;color:var(--gray-500)"></div>
     </div>
   </div>
-  <div class="form-section"><div class="form-section-title">⏰ เวลาเปิด-ปิด</div>
-    <div class="field-row">
-      <div class="field"><label>เปิด</label><input type="time" id="bOpenTime" value="${d.openTime||'09:00'}"></div>
-      <div class="field"><label>ปิด</label><input type="time" id="bCloseTime" value="${d.closeTime||'21:00'}"></div>
-    </div>
-    <div class="field"><label>หมายเหตุเวลา</label><input type="text" id="bOpenNote" value="${d.openNote||''}" placeholder="เปิดทุกวัน 09:00-21:00"></div>
-  </div>
+  <div class="form-section">${renderHoursSection(d)}</div>
   <div class="form-section"><div class="form-section-title">📸 รูปภาพ <span style="font-weight:400;font-size:11px;color:var(--orange)">(ขั้นต่ำ 3 รูป)</span></div>
     <p style="font-size:11px;color:var(--gray-500);margin-bottom:12px">วาง URL รูปภาพ กด "+ เพิ่มรูป"</p>
     <div id="photoUrlList">${(()=>{const photos=[d.photo1||'',d.photo2||'',d.photo3||'',...(d.photos||[])].filter((v,i,a)=>v&&a.indexOf(v)===i);const rows=Math.max(3,photos.length);let html='';for(let i=0;i<rows;i++){const val=photos[i]||'';const isReq=i<3;html+=`<div class="photo-url-row" style="display:flex;gap:8px;margin-bottom:8px;align-items:center"><div style="position:relative;flex:1"><input type="url" class="photo-url-input" value="${val}" placeholder="https://... ${isReq?'(จำเป็น)':'(ไม่บังคับ)'}" oninput="previewPhoto(this)" style="width:100%;padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;outline:none">${val?`<img src="${val}" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:28px;height:28px;object-fit:cover;border-radius:4px" onerror="this.style.display='none'" class="photo-preview-thumb">`:'<span class="photo-preview-thumb" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--gray-400)">🖼️</span>'}</div>${i>=3?`<button type="button" onclick="removePhotoRow(this)" style="padding:8px;background:var(--red-light);color:var(--red);border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:14px">✕</button>`:'<div style="width:32px"></div>'}</div>`;}return html;})()}</div>
@@ -764,19 +759,7 @@ function collectBizFormData(type){
   const g=id=>{const el=document.getElementById(id);return el?el.value:''};
   const gc=ids=>ids.filter(id=>{const el=document.getElementById(id);return el&&el.checked});
   const latVal=parseFloat(g('bLat'))||0,lngVal=parseFloat(g('bLng'))||0;
-  // collect hours per day
-const days=['mon','tue','wed','thu','fri','sat','sun'];
-const hours={};
-days.forEach(d=>{
-  const cb=document.getElementById('open-'+d);
-  const isOpen=cb?cb.checked:true;
-  hours[d]={
-    open:isOpen,
-    openTime:document.getElementById('open-t-'+d)?.value||'09:00',
-    closeTime:document.getElementById('close-t-'+d)?.value||'21:00'
-  };
-});
-const base={name:g('bName'),province:g('bProvince'),phone:g('bPhone'),address:g('bAddress'),googleMapUrl:g('bMapUrl'),latitude:latVal,longitude:lngVal,defaultOpenTime:g('bDefaultOpen'),defaultCloseTime:g('bDefaultClose'),openNote:g('bOpenNote'),hours:hours,photo1:getPhotoUrls()[0]||'',photo2:getPhotoUrls()[1]||'',photo3:getPhotoUrls()[2]||'',photos:getPhotoUrls(),category:BIZ_TYPES[type].cat};
+  const base={name:g('bName'),province:g('bProvince'),phone:g('bPhone'),address:g('bAddress'),googleMapUrl:g('bMapUrl'),latitude:latVal,longitude:lngVal,defaultOpenTime:g('bDefaultOpen')||'09:00',defaultCloseTime:g('bDefaultClose')||'21:00',openNote:g('bOpenNote'),hours:(function(){var hh={};['mon','tue','wed','thu','fri','sat','sun'].forEach(function(k){var cb=document.getElementById('open-'+k);hh[k]={open:cb?cb.checked:true,openTime:document.getElementById('open-t-'+k)?.value||'09:00',closeTime:document.getElementById('close-t-'+k)?.value||'21:00'};});return hh;})(),photo1:getPhotoUrls()[0]||'',photo2:getPhotoUrls()[1]||'',photo3:getPhotoUrls()[2]||'',photos:getPhotoUrls(),category:BIZ_TYPES[type].cat};
   const extras={
     hotel:()=>({allowedPetTypes:g('bPetTypes'),maxPetWeight:g('bMaxWeight'),maxPetCount:g('bMaxPets'),petFeePerNight:g('bPetFee'),petDeposit:g('bPetDeposit'),checkInTime:g('bCheckIn'),checkOutTime:g('bCheckOut'),cancellationPolicy:g('bCancel'),amenities:Array.from(document.querySelectorAll('.amenity-cb:checked')).map(c=>c.value).join(','),extraGuestFeePerNight:'500',baseGuests:'2'}),
     cafe:()=>({indoorOutdoor:g('bIndoorOutdoor'),subType:g('bSubType'),description:g('bDesc'),petPolicy:gc(['cLeash','cStroller','cAllPets','cDogOnly']).join(','),petDetail:g('bPetDetail')}),
@@ -885,7 +868,7 @@ async function submitBizUpdate(){
   }catch(e){msgEl.innerHTML='<div class="error-msg">เกิดข้อผิดพลาด: '+e.message+'</div>';}
 }
 
-// ─── EmailJS System ───
+// ─── Brevo Email System ───
 let emailPartnerTarget={};
 let isBulkMode=false;
 let bulkRecipients=[];
@@ -949,44 +932,20 @@ function openBulkEmailModal(){
 function applyTemplate(val){
   const templates={
     invite:{
-      subject:'ขอเรียนเชิญ {{ชื่อร้าน}} ร่วมเป็นพาร์ทเนอร์ Exclusive กับ PippoGO 🐾',
-      body:`เรียน คุณ {{ชื่อ}},
+      subject:'ขอเชิญร่วมเป็นพาร์ทเนอร์กับ PippoGO 🐾',
+      body:`สวัสดีครับ/ค่ะ คุณ {{ชื่อ}},
 
-ทางทีมงาน PippoGO แอปพลิเคชันแพลตฟอร์มศูนย์รวมและค้นหาสถานที่ Pet-Friendly ชั้นนำของไทย เล็งเห็นว่า {{ชื่อร้าน}} มีศักยภาพและมีนโยบายที่ต้อนรับสัตว์เลี้ยงเป็นอย่างดี เราจึงใคร่ขอเรียนเชิญท่านเข้าร่วมเป็นพาร์ทเนอร์ระดับ Exclusive กับเรา เพื่อเติบโตไปด้วยกันครับ
+ทีมงาน PippoGO ขอแนะนำแอปพลิเคชันสำหรับค้นหาสถานที่ Pet-Friendly ชั้นนำของไทย 🐶🐱
 
-─────────────────────────────
-ทำไมต้องร่วมเป็นพาร์ทเนอร์กับ PippoGO?
-─────────────────────────────
+เราอยากเชิญชวน {{ชื่อร้าน}} เข้าร่วมเป็นพาร์ทเนอร์กับเราครับ เพื่อเพิ่มโอกาสให้คนรักสัตว์เลี้ยงค้นพบร้านของคุณ
 
-🎯 เข้าถึงกลุ่มเป้าหมายโดยตรง 100%
-แอปพลิเคชันของเราออกแบบมาเพื่อเชื่อมต่อเจ้าของสัตว์เลี้ยงกับสถานที่ Pet-Friendly โดยเฉพาะ ช่วยให้ {{ชื่อร้าน}} โดดเด่นในสายตานักท่องเที่ยวที่ตั้งใจพาสัตว์เลี้ยงมาพักผ่อนด้วย — กลุ่มที่มี loyalty สูงมากและหายากบน OTA ทั่วไป
+📱 ดาวน์โหลดแอป PippoGO: [App Store / Google Play]
+🌐 ข้อมูลเพิ่มเติม: pippogo.com
 
-🔍 ระบบค้นหาที่ตอบโจทย์ (Advanced Filter)
-ผู้ใช้งานสามารถค้นหาที่พักตามเงื่อนไขที่ละเอียด เช่น ประเภทสัตว์เลี้ยงที่รับ น้ำหนัก หรือสิ่งอำนวยความสะดวกสำหรับสัตว์เลี้ยง ช่วยลดขั้นตอนการตอบคำถามของแอดมิน และกรองลูกค้าตรงกลุ่มมาให้ท่านอัตโนมัติ
+หากสนใจ ตอบกลับอีเมล์นี้ได้เลยครับ ทีมงานยินดีให้ข้อมูลเพิ่มเติม
 
-📈 การันตีการเติบโต
-เราตั้งเป้ายอดผู้ดาวน์โหลดและ Active Users กลุ่มเป้าหมายตรงกว่า 5,000 – 10,000 ราย ภายใน 6 เดือนแรก ผ่านการทำการตลาดออนไลน์อย่างต่อเนื่องร่วมกับ Community คนรักสัตว์เลี้ยงที่แข็งแกร่ง
-
-─────────────────────────────
-✨ ข้อเสนอสุดพิเศษ Early Bird Launch
-─────────────────────────────
-
-เพื่อเป็นการต้อนรับ {{ชื่อร้าน}} เข้าสู่ครอบครัว PippoGO ทางเรายินดีมอบสิทธิพิเศษ
-
-🎁 ยกเว้นค่าบริการและค่าธรรมเนียมการใช้แพลตฟอร์มทั้งหมด ฟรี! ในช่วง 6 เดือนแรก
-(ไม่มีข้อผูกมัดใดๆ หลังหมดเขต)
-
-เพื่อให้ท่านได้ทดลองระบบและรับยอดจองจริงจากผู้ใช้แอปของเรา โดยไม่มีความเสี่ยงใดๆ ทั้งสิ้น
-
-─────────────────────────────
-
-หากท่านสนใจหรือต้องการข้อมูลเพิ่มเติม ทีมงานยินดีนัดพูดคุยในเวลาที่สะดวกครับ ตอบกลับอีเมล์นี้ได้เลย
-
-ขอบคุณที่สละเวลาอ่านครับ
-
-ทีม PippoGO 🐾
-team.pippogo@gmail.com
-pippogo.com`
+ขอบคุณครับ/ค่ะ
+ทีม PippoGO`
     },
     update:{
       subject:'อัปเดตข่าวสารจาก PippoGO 📣',
@@ -1017,20 +976,29 @@ PippoGO มีโปรโมชันพิเศษสำหรับพาร
   }
 }
 
-// ── core: ส่งผ่าน EmailJS ──
-async function sendViaEmailJS(toEmail, toName, subject, message){
-  return await emailjs.send('service_o9v09xs', 'template_7h1kr2o', {
-    to_email: toEmail,
-    to_name: toName,
+// ── core: ส่งผ่าน Brevo API ──
+async function sendViaBrevo(toEmail, toName, subject, htmlBody, attachmentUrl=''){
+  const payload={
+    sender: BREVO_SENDER,
+    to: [{email:toEmail, name:toName}],
     subject: subject,
-    message: message,
-    email: toEmail
+    htmlContent: htmlBody.split('\n').join('<br>')
+  };
+  if(attachmentUrl){
+    payload.attachment=[{url:attachmentUrl, name:'document.pdf'}];
+  }
+  const res=await fetch('https://api.brevo.com/v3/smtp/email',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','api-key':BREVO_API_KEY},
+    body:JSON.stringify(payload)
   });
+  if(!res.ok){const err=await res.json();throw new Error(err.message||'Brevo error');}
+  return await res.json();
 }
 
 // ── กดส่ง ──
 async function doSendEmail(){
-  let subject=document.getElementById('emailSubject').value.trim();
+  const subject=document.getElementById('emailSubject').value.trim();
   const bodyRaw=document.getElementById('emailBody').value.trim();
   const attachUrl=document.getElementById('emailAttachment').value.trim();
   const msgEl=document.getElementById('emailPartnerMsg');
@@ -1046,9 +1014,8 @@ async function doSendEmail(){
       for(let i=0;i<bulkRecipients.length;i++){
         const r=bulkRecipients[i];
         const body=bodyRaw.replace(/{{ชื่อ}}/g,r.name||r.bizName).replace(/{{ชื่อร้าน}}/g,r.bizName);
-        const subjectFinal=subject.replace(/{{ชื่อ}}/g,r.name||r.bizName).replace(/{{ชื่อร้าน}}/g,r.bizName);
         try{
-          await sendViaEmailJS(r.email,r.name||r.bizName,subjectFinal,body);
+          await sendViaBrevo(r.email,r.name||r.bizName,subject,body,attachUrl);
           ok++;
           // อัปเดต status → contacted
           const snap=await db.collection('partner_contacts').where('bizName','==',r.bizName).limit(1).get();
@@ -1066,8 +1033,7 @@ async function doSendEmail(){
     }else{
       // ── single send ──
       const body=bodyRaw.replace(/{{ชื่อ}}/g,emailPartnerTarget.contactName||emailPartnerTarget.bizName).replace(/{{ชื่อร้าน}}/g,emailPartnerTarget.bizName);
-      const subjectFinal=subject.replace(/{{ชื่อ}}/g,emailPartnerTarget.contactName||emailPartnerTarget.bizName).replace(/{{ชื่อร้าน}}/g,emailPartnerTarget.bizName);
-      await sendViaEmailJS(emailPartnerTarget.email,emailPartnerTarget.contactName||emailPartnerTarget.bizName,subjectFinal,body);
+      await sendViaBrevo(emailPartnerTarget.email,emailPartnerTarget.contactName||emailPartnerTarget.bizName,subject,body,attachUrl);
       // อัปเดต status
       const snap=await db.collection('partner_contacts').where('bizName','==',emailPartnerTarget.bizName).limit(1).get();
       if(!snap.empty&&snap.docs[0].data().status==='prospect'){
@@ -1135,8 +1101,8 @@ function renderContacts(contacts){
       <td><input type="checkbox" class="contact-cb" data-id="${c.id}" data-email="${c.email||''}" data-name="${c.bizName||''}" data-contact="${c.contactName||''}" onchange="updateBulkSelect()" style="cursor:pointer"></td>
       <td><div style="font-size:11px;color:var(--gray-500)">${bizTypeMap[c.bizType]||c.bizType||'-'}</div><strong>${c.bizName||'-'}</strong>${c.position?`<div style="font-size:11px;color:var(--gray-500)">${c.position}</div>`:''}</td>
       <td><strong>${c.contactName||'-'}</strong><div style="font-size:11px;color:var(--gray-500)">${dt}</div></td>
-      <td>${(c.phone?'<div><a href="tel:'+c.phone+'" style="color:var(--blue);text-decoration:none;font-size:13px">📞 '+c.phone+'</a></div>':'')}${(c.email?'<div><a href="mailto:'+c.email+'" style="color:var(--gray-500);text-decoration:none;font-size:12px">✉️ '+c.email+'</a></div>':'')}</td>
-      <td>${(c.line?'<div style="font-size:12px">💬 '+c.line+'</div>':'')}${(c.province?'<div style="font-size:12px;color:var(--gray-500)">📍 '+c.province+'</div>':'')}</td>
+      <td>${c.phone?`<div><a href="tel:${c.phone}" style="color:var(--blue);text-decoration:none;font-size:13px">📞 ${c.phone}</a></div>`:''}${c.email?`<div><a href="mailto:${c.email}" style="color:var(--gray-500);text-decoration:none;font-size:12px">✉️ ${c.email}</a></div>`:''}</td>
+      <td>${c.line?`<div style="font-size:12px">💬 ${c.line}</div>`:''}${c.province?`<div style="font-size:12px;color:var(--gray-500)">📍 ${c.province}</div>`:''}</td>
       <td><span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;background:${st.bg};color:${st.color}">${st.label}</span>${c.note?`<div style="font-size:10px;color:var(--gray-500);margin-top:3px;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${c.note}">📝 ${c.note}</div>`:''}</td>
       <td><div class="action-row">${c.email?`<button class="btn-icon btn-view" onclick="sendEmailToPartner('${c.email}','${c.bizName||''}','${c.contactName||''}')" title="ส่งอีเมล์">✉️</button>`:''}<button class="btn-icon btn-view" onclick="openEditContact('${c.id}')" title="แก้ไข">✏️</button><button class="btn-icon btn-reject" onclick="deleteContact('${c.id}')" title="ลบ">ลบ</button></div></td>
     </tr>`;
@@ -1464,59 +1430,74 @@ function previewPhoto(input){const thumb=input.parentElement.querySelector('.pho
 function getPhotoUrls(){const inputs=document.querySelectorAll('#photoUrlList .photo-url-input');return Array.from(inputs).map(i=>i.value.trim()).filter(Boolean);}
 function validatePhotos(){const photos=getPhotoUrls();const msgEl=document.getElementById('photoValidationMsg');if(photos.length<3){if(msgEl)msgEl.style.display='block';return false;}if(msgEl)msgEl.style.display='none';return true;}
 
-// ─── Hours Helpers ───
-function toggleDayHours(day){
-  const cb=document.getElementById('open-'+day);
-  const timeDiv=document.getElementById('time-'+day);
-  const closedDiv=document.getElementById('closed-'+day);
-  if(!cb||!timeDiv||!closedDiv)return;
-  if(cb.checked){
-    timeDiv.style.opacity='1';timeDiv.style.pointerEvents='auto';
-    closedDiv.style.display='none';
-  }else{
-    timeDiv.style.opacity='.3';timeDiv.style.pointerEvents='none';
-    closedDiv.style.display='flex';
-  }
+// ─── Hours Section Renderer ───
+function renderHoursSection(d){
+  var days=[['mon','จันทร์'],['tue','อังคาร'],['wed','พุธ'],['thu','พฤหัสฯ'],['fri','ศุกร์'],['sat','เสาร์'],['sun','อาทิตย์']];
+  var defOpen=d.defaultOpenTime||'09:00';
+  var defClose=d.defaultCloseTime||'21:00';
+  var rows=days.map(function(item){
+    var key=item[0];var label=item[1];
+    var day=(d.hours&&d.hours[key])||{};
+    var isOpen=day.open!==false;
+    var ot=day.openTime||defOpen;
+    var ct=day.closeTime||defClose;
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--gray-200)">'
+      +'<label style="display:flex;align-items:center;gap:8px;min-width:95px;cursor:pointer;font-size:13px;font-weight:600">'
+      +'<input type="checkbox" class="day-cb" data-day="'+key+'" id="open-'+key+'" '+(isOpen?'checked':'')+' style="width:16px;height:16px;cursor:pointer"> '+label
+      +'</label>'
+      +'<div id="time-'+key+'" style="display:flex;align-items:center;gap:6px;flex:1;'+(isOpen?'':'opacity:.3;pointer-events:none;')+'">'
+      +'<input type="time" id="open-t-'+key+'" value="'+ot+'" style="padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:var(--font);font-size:13px;outline:none;flex:1">'
+      +'<span style="color:var(--gray-500);font-size:13px">–</span>'
+      +'<input type="time" id="close-t-'+key+'" value="'+ct+'" style="padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:var(--font);font-size:13px;outline:none;flex:1">'
+      +'</div>'
+      +'<div id="closed-'+key+'" style="display:'+(isOpen?'none':'flex')+'">'
+      +'<span style="font-size:11px;color:var(--red);font-weight:600;background:var(--red-light);padding:3px 10px;border-radius:20px">ปิด</span>'
+      +'</div></div>';
+  }).join('');
+  return '<div class="form-section-title">⏰ เวลาเปิด-ปิด</div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'
+    +'<button type="button" data-preset="everyday" class="preset-btn" style="padding:5px 13px;border:1.5px solid var(--blue);border-radius:20px;background:var(--blue-light);color:var(--blue);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer">📅 เปิดทุกวัน</button>'
+    +'<button type="button" data-preset="weekday" class="preset-btn" style="padding:5px 13px;border:1.5px solid var(--gray-200);border-radius:20px;background:white;color:var(--gray-700);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer">💼 จันทร์–ศุกร์</button>'
+    +'<button type="button" data-preset="weekend" class="preset-btn" style="padding:5px 13px;border:1.5px solid var(--gray-200);border-radius:20px;background:white;color:var(--gray-700);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer">🎉 เสาร์–อาทิตย์</button>'
+    +'<button type="button" data-preset="except_mon" class="preset-btn" style="padding:5px 13px;border:1.5px solid var(--gray-200);border-radius:20px;background:white;color:var(--gray-700);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer">🚫 ปิดวันจันทร์</button>'
+    +'</div>'
+    +'<div class="field-row" style="margin-bottom:10px">'
+    +'<div class="field" style="margin:0"><label>เวลาเปิด (default)</label><input type="time" id="bDefaultOpen" value="'+defOpen+'" onchange="syncDefaultTime()"></div>'
+    +'<div class="field" style="margin:0"><label>เวลาปิด (default)</label><input type="time" id="bDefaultClose" value="'+defClose+'" onchange="syncDefaultTime()"></div>'
+    +'</div>'
+    +'<div style="border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);overflow:hidden;margin-bottom:10px">'+rows+'</div>'
+    +'<div class="field"><label>หมายเหตุเพิ่มเติม</label><input type="text" id="bOpenNote" value="'+(d.openNote||'')+'" placeholder="เช่น ปิดวันหยุดนักขัตฤกษ์ / Last order 20:30"></div>';
+}
+
+function toggleDayHours(cb,day){
+  var timeDiv=document.getElementById('time-'+day);
+  var closedDiv=document.getElementById('closed-'+day);
+  if(!timeDiv||!closedDiv)return;
+  if(cb.checked){timeDiv.style.opacity='1';timeDiv.style.pointerEvents='auto';closedDiv.style.display='none';}
+  else{timeDiv.style.opacity='.3';timeDiv.style.pointerEvents='none';closedDiv.style.display='flex';}
 }
 
 function syncDefaultTime(){
-  const openT=document.getElementById('bDefaultOpen')?.value||'09:00';
-  const closeT=document.getElementById('bDefaultClose')?.value||'21:00';
-  ['mon','tue','wed','thu','fri','sat','sun'].forEach(d=>{
-    const cb=document.getElementById('open-'+d);
+  var ot=document.getElementById('bDefaultOpen')?.value||'09:00';
+  var ct=document.getElementById('bDefaultClose')?.value||'21:00';
+  ['mon','tue','wed','thu','fri','sat','sun'].forEach(function(k){
+    var cb=document.getElementById('open-'+k);
     if(cb&&cb.checked){
-      const ot=document.getElementById('open-t-'+d);
-      const ct=document.getElementById('close-t-'+d);
-      if(ot)ot.value=openT;
-      if(ct)ct.value=closeT;
+      var el=document.getElementById('open-t-'+k);if(el)el.value=ot;
+      el=document.getElementById('close-t-'+k);if(el)el.value=ct;
     }
   });
 }
 
 function applyHoursPreset(preset){
-  const days=['mon','tue','wed','thu','fri','sat','sun'];
-  const openT=document.getElementById('bDefaultOpen')?.value||'09:00';
-  const closeT=document.getElementById('bDefaultClose')?.value||'21:00';
-  const weekdays=['mon','tue','wed','thu','fri'];
-  const weekend=['sat','sun'];
-
-  const setDay=(d,isOpen)=>{
-    const cb=document.getElementById('open-'+d);
-    if(cb){cb.checked=isOpen;toggleDayHours(d);}
-  };
-
-  if(preset==='everyday') days.forEach(d=>setDay(d,true));
-  else if(preset==='weekday'){weekdays.forEach(d=>setDay(d,true));weekend.forEach(d=>setDay(d,false));}
-  else if(preset==='weekend'){weekend.forEach(d=>setDay(d,true));weekdays.forEach(d=>setDay(d,false));}
-  else if(preset==='except_mon'){days.forEach(d=>setDay(d,true));setDay('mon',false);}
-
-  // highlight active preset button
-  document.querySelectorAll('[onclick^="applyHoursPreset"]').forEach(btn=>{
-    btn.style.background='white';btn.style.borderColor='var(--gray-200)';btn.style.color='var(--gray-700)';
-  });
-  event.target.style.background='var(--blue-light)';
-  event.target.style.borderColor='var(--blue)';
-  event.target.style.color='var(--blue)';
+  var days=['mon','tue','wed','thu','fri','sat','sun'];
+  var weekdays=['mon','tue','wed','thu','fri'];
+  var weekend=['sat','sun'];
+  function setDay(k,isOpen){var cb=document.getElementById('open-'+k);if(cb){cb.checked=isOpen;toggleDayHours(cb,k);}}
+  if(preset==='everyday')days.forEach(function(k){setDay(k,true);});
+  else if(preset==='weekday'){weekdays.forEach(function(k){setDay(k,true);});weekend.forEach(function(k){setDay(k,false);});}
+  else if(preset==='weekend'){weekend.forEach(function(k){setDay(k,true);});weekdays.forEach(function(k){setDay(k,false);});}
+  else if(preset==='except_mon'){days.forEach(function(k){setDay(k,true);});setDay('mon',false);}
 }
 
 // ─── Province Autocomplete (universal) ───
@@ -1535,6 +1516,15 @@ function pickProvince(val,inputId,boxId){
   const box=document.getElementById(boxId);if(box)box.style.display='none';
 }
 
+document.addEventListener('change',function(e){
+  if(e.target.classList.contains('day-cb')){
+    toggleDayHours(e.target,e.target.dataset.day);
+  }
+});
+document.addEventListener('click',function(e){
+  var btn=e.target.closest('.preset-btn');
+  if(btn&&btn.dataset.preset){applyHoursPreset(btn.dataset.preset);}
+});
 document.addEventListener('click',e=>{
   ['bProvSug','cProvSug'].forEach(id=>{
     if(!e.target.closest('#'+id)&&!e.target.closest('#bProvince')&&!e.target.closest('#cProvince')){
