@@ -1033,7 +1033,7 @@ async function doSendEmail(){
         btn.textContent=`กำลังส่ง ${i+1}/${bulkRecipients.length}...`;
         if(i<bulkRecipients.length-1)await new Promise(r=>setTimeout(r,300));
       }
-      msgEl.innerHTML=`<div class="success-msg">✅ ส่งสำเร็จ ${ok} ราย${fail>0?` · ล้มเหลว ${fail} ราย`:''}</div>`;
+      msgEl.innerHTML='<div class="success-msg">✅ ส่งสำเร็จ '+ok+' ราย'+(fail>0?' · ล้มเหลว '+fail+' ราย':'')+'</div>';
       // บันทึก email log
       await db.collection('email_logs').add({type:'bulk',subject,recipients:bulkRecipients.length,sentOk:ok,sentFail:fail,sentBy:currentUser.email,sentAt:firebase.firestore.FieldValue.serverTimestamp()});
       setTimeout(()=>{closeModal('emailPartnerModal');loadContacts();},2000);
