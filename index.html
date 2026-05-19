@@ -428,15 +428,45 @@ tr:hover td{background:var(--gray-50);}
   </div>
 </div>
 <div class="modal-overlay" id="emailPartnerModal">
-  <div class="modal" style="max-width:520px">
-    <div class="modal-header"><h3>✉️ ส่งอีเมล์ถึงผู้ประกอบการ</h3><button class="modal-close" onclick="closeModal('emailPartnerModal')">✕</button></div>
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header">
+      <h3 id="emailModalTitle">✉️ ส่งอีเมล์ถึงผู้ประกอบการ</h3>
+      <button class="modal-close" onclick="closeModal('emailPartnerModal')">✕</button>
+    </div>
     <div class="modal-body">
       <div id="emailPartnerMsg"></div>
-      <div class="field"><label>ถึง</label><input type="text" id="emailTo" readonly style="background:var(--gray-100);cursor:not-allowed"></div>
-      <div class="field"><label>หัวข้อ *</label><input type="text" id="emailSubject" placeholder="เช่น แจ้งข้อมูลเพิ่มเติมสำหรับ PippoGO"></div>
-      <div class="field"><label>ข้อความ *</label><textarea id="emailBody" style="min-height:120px" placeholder="พิมพ์ข้อความที่ต้องการส่ง..."></textarea></div>
+      <div id="emailToRow" class="field">
+        <label>ถึง</label>
+        <input type="text" id="emailTo" readonly style="background:var(--gray-100);cursor:not-allowed">
+      </div>
+      <div class="field">
+        <label>Template สำเร็จรูป</label>
+        <select id="emailTemplate" onchange="applyTemplate(this.value)" style="font-family:var(--font);font-size:14px;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);width:100%;outline:none">
+          <option value="">— เลือก template หรือเขียนเอง —</option>
+          <option value="invite">📩 เชิญชวนเป็นพาร์ทเนอร์</option>
+          <option value="update">📣 อัปเดตข่าวสาร</option>
+          <option value="promo">🎉 โปรโมชันพิเศษ</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>หัวข้อ *</label>
+        <input type="text" id="emailSubject" placeholder="เช่น ขอเชิญร่วมเป็นพาร์ทเนอร์กับ PippoGO">
+      </div>
+      <div class="field">
+        <label>ข้อความ * <span style="font-size:11px;color:var(--gray-500);font-weight:400">— ใช้ {{ชื่อ}} และ {{ชื่อร้าน}} ได้</span></label>
+        <textarea id="emailBody" style="min-height:180px" placeholder="พิมพ์ข้อความที่ต้องการส่ง...&#10;&#10;ใช้ {{ชื่อ}} สำหรับชื่อคนติดต่อ&#10;ใช้ {{ชื่อร้าน}} สำหรับชื่อร้าน"></textarea>
+      </div>
+      <div class="field">
+        <label>แนบไฟล์ PDF (URL) <span style="font-size:11px;color:var(--gray-500);font-weight:400">— ไม่บังคับ</span></label>
+        <input type="url" id="emailAttachment" placeholder="https://... (link PDF จาก Google Drive หรือ Dropbox)">
+      </div>
+      <p style="font-size:11px;color:var(--gray-500);background:var(--gray-100);padding:8px 12px;border-radius:var(--radius-sm)">
+        ✉️ ส่งผ่าน Brevo · 300 เมล์/วัน ฟรี · Status จะเปลี่ยนเป็น Contacted อัตโนมัติ
+      </p>
     </div>
-    <div class="modal-footer"><button class="btn btn-primary btn-sm" id="sendEmailBtn" onclick="doSendEmail()">✉️ ส่งอีเมล์</button></div>
+    <div class="modal-footer">
+      <button class="btn btn-primary btn-sm" id="sendEmailBtn" onclick="doSendEmail()">✉️ ส่ง</button>
+    </div>
   </div>
 </div>
 <div class="modal-overlay" id="addBizModal">
@@ -603,6 +633,8 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 const ADMIN_EMAILS = ['admin@pippogo.com','seth@pippogo.com','yok-chinn@hotmail.com'];
+const BREVO_API_KEY = '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';
+const BREVO_SENDER = { name: 'PippoGO', email: 'seth@pippogo.com' }; // เปลี่ยนเป็น email ที่ verify ใน Brevo
 let currentUser=null,currentRole=null,currentBizType=null,currentBizId=null,currentReviewId=null,currentReviewData=null;
 let editRoomId=null,allPlacesCache=[];
 const BIZ_TYPES = {
@@ -842,23 +874,186 @@ async function submitBizUpdate(){
   }catch(e){msgEl.innerHTML='<div class="error-msg">เกิดข้อผิดพลาด: '+e.message+'</div>';}
 }
 
+// ─── Brevo Email System ───
 let emailPartnerTarget={};
+let isBulkMode=false;
+let bulkRecipients=[];
+
+// ── ส่งเดี่ยว: เปิด modal ──
 function sendEmailToPartner(email,bizName,contactName){
+  if(!email){alert('ผู้ประกอบการรายนี้ไม่มีอีเมล์');return;}
+  isBulkMode=false;bulkRecipients=[];
   emailPartnerTarget={email,bizName,contactName};
-  document.getElementById('emailTo').value=`${contactName} <${email}> — ${bizName}`;
-  document.getElementById('emailSubject').value='';document.getElementById('emailBody').value='';document.getElementById('emailPartnerMsg').innerHTML='';
+  document.getElementById('emailTo').value=`${contactName||bizName} <${email}>`;
+  document.getElementById('emailSubject').value='';
+  document.getElementById('emailBody').value='';
+  document.getElementById('emailAttachment').value='';
+  document.getElementById('emailTemplate').value='';
+  document.getElementById('emailPartnerMsg').innerHTML='';
+  document.getElementById('emailModalTitle').textContent='✉️ ส่งอีเมล์ถึงผู้ประกอบการ';
+  document.getElementById('emailToRow').style.display='';
   openModal('emailPartnerModal');
 }
+
+// ── checkbox helpers ──
+function updateBulkSelect(){
+  const cbs=document.querySelectorAll('.contact-cb:checked');
+  const total=document.querySelectorAll('.contact-cb');
+  const btn=document.getElementById('bulkEmailBtn');
+  const countEl=document.getElementById('bulkCount');
+  const selEl=document.getElementById('selectedCount');
+  if(btn){btn.style.display=cbs.length>0?'inline-block':'none';}
+  if(countEl)countEl.textContent=cbs.length;
+  if(selEl)selEl.textContent=cbs.length>0?`· เลือก ${cbs.length} ราย`:'';
+  const allCb=document.getElementById('selectAll');
+  if(allCb)allCb.indeterminate=cbs.length>0&&cbs.length<total.length;
+  if(allCb&&cbs.length===total.length&&total.length>0)allCb.checked=true;
+}
+function toggleSelectAll(cb){
+  document.querySelectorAll('.contact-cb').forEach(c=>c.checked=cb.checked);
+  updateBulkSelect();
+}
+
+// ── ส่งกลุ่ม: เปิด modal ──
+function openBulkEmailModal(){
+  const cbs=document.querySelectorAll('.contact-cb:checked');
+  if(cbs.length===0){alert('กรุณาเลือกผู้รับอย่างน้อย 1 ราย');return;}
+  bulkRecipients=Array.from(cbs).map(cb=>({
+    email:cb.dataset.email, name:cb.dataset.contact||cb.dataset.name, bizName:cb.dataset.name
+  })).filter(r=>r.email);
+  const noEmail=cbs.length-bulkRecipients.length;
+  isBulkMode=true;
+  document.getElementById('emailModalTitle').textContent=`📤 ส่งกลุ่ม (${bulkRecipients.length} ราย)`;
+  document.getElementById('emailToRow').style.display='none';
+  document.getElementById('emailTo').value='';
+  document.getElementById('emailSubject').value='';
+  document.getElementById('emailBody').value='';
+  document.getElementById('emailAttachment').value='';
+  document.getElementById('emailTemplate').value='';
+  document.getElementById('emailPartnerMsg').innerHTML=noEmail>0?`<div class="error-msg" style="margin-bottom:8px">⚠️ ${noEmail} ราย ไม่มีอีเมล์ — จะถูกข้ามไป</div>`:'';
+  openModal('emailPartnerModal');
+}
+
+// ── apply template ──
+function applyTemplate(val){
+  const templates={
+    invite:{
+      subject:'ขอเชิญร่วมเป็นพาร์ทเนอร์กับ PippoGO 🐾',
+      body:`สวัสดีครับ/ค่ะ คุณ {{ชื่อ}},
+
+ทีมงาน PippoGO ขอแนะนำแอปพลิเคชันสำหรับค้นหาสถานที่ Pet-Friendly ชั้นนำของไทย 🐶🐱
+
+เราอยากเชิญชวน {{ชื่อร้าน}} เข้าร่วมเป็นพาร์ทเนอร์กับเราครับ เพื่อเพิ่มโอกาสให้คนรักสัตว์เลี้ยงค้นพบร้านของคุณ
+
+📱 ดาวน์โหลดแอป PippoGO: [App Store / Google Play]
+🌐 ข้อมูลเพิ่มเติม: pippogo.com
+
+หากสนใจ ตอบกลับอีเมล์นี้ได้เลยครับ ทีมงานยินดีให้ข้อมูลเพิ่มเติม
+
+ขอบคุณครับ/ค่ะ
+ทีม PippoGO`
+    },
+    update:{
+      subject:'อัปเดตข่าวสารจาก PippoGO 📣',
+      body:`สวัสดีครับ/ค่ะ คุณ {{ชื่อ}},
+
+มีข่าวสารใหม่จาก PippoGO ที่อยากแชร์ให้ทราบครับ
+
+[ใส่เนื้อหาข่าวสาร / อัปเดต]
+
+ขอบคุณที่ติดตามเราครับ 🐾
+ทีม PippoGO`
+    },
+    promo:{
+      subject:'โปรโมชันพิเศษจาก PippoGO 🎉',
+      body:`สวัสดีครับ/ค่ะ คุณ {{ชื่อ}},
+
+PippoGO มีโปรโมชันพิเศษสำหรับพาร์ทเนอร์ที่เราอยากแจ้งให้ทราบครับ
+
+[ใส่รายละเอียดโปรโมชัน]
+
+สนใจติดต่อกลับได้เลยครับ
+ทีม PippoGO`
+    }
+  };
+  if(templates[val]){
+    document.getElementById('emailSubject').value=templates[val].subject;
+    document.getElementById('emailBody').value=templates[val].body;
+  }
+}
+
+// ── core: ส่งผ่าน Brevo API ──
+async function sendViaBrevo(toEmail, toName, subject, htmlBody, attachmentUrl=''){
+  const payload={
+    sender: BREVO_SENDER,
+    to: [{email:toEmail, name:toName}],
+    subject: subject,
+    htmlContent: htmlBody.replace(/
+/g,'<br>')
+  };
+  if(attachmentUrl){
+    payload.attachment=[{url:attachmentUrl, name:'document.pdf'}];
+  }
+  const res=await fetch('https://api.brevo.com/v3/smtp/email',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','api-key':BREVO_API_KEY},
+    body:JSON.stringify(payload)
+  });
+  if(!res.ok){const err=await res.json();throw new Error(err.message||'Brevo error');}
+  return await res.json();
+}
+
+// ── กดส่ง ──
 async function doSendEmail(){
-  const subject=document.getElementById('emailSubject').value.trim(),body=document.getElementById('emailBody').value.trim();
-  const msgEl=document.getElementById('emailPartnerMsg'),btn=document.getElementById('sendEmailBtn');
-  if(!subject||!body){msgEl.innerHTML='<div class="error-msg">กรุณากรอกหัวข้อและข้อความ</div>';return;}
-  btn.disabled=true;btn.textContent='กำลังส่ง...';msgEl.innerHTML='';
+  const subject=document.getElementById('emailSubject').value.trim();
+  const bodyRaw=document.getElementById('emailBody').value.trim();
+  const attachUrl=document.getElementById('emailAttachment').value.trim();
+  const msgEl=document.getElementById('emailPartnerMsg');
+  const btn=document.getElementById('sendEmailBtn');
+  if(!subject||!bodyRaw){msgEl.innerHTML='<div class="error-msg">กรุณากรอกหัวข้อและข้อความ</div>';return;}
+  btn.disabled=true;btn.textContent='กำลังส่ง...';
+
   try{
-    await emailjs.send('YOUR_SERVICE_ID','YOUR_TEMPLATE_ID',{to_email:emailPartnerTarget.email,to_name:emailPartnerTarget.contactName,biz_name:emailPartnerTarget.bizName,subject,message:body,from_name:'PippoGO Admin',reply_to:currentUser.email});
-    msgEl.innerHTML='<div class="success-msg">✅ ส่งอีเมล์สำเร็จแล้ว!</div>';setTimeout(()=>closeModal('emailPartnerModal'),1500);
-  }catch(e){msgEl.innerHTML=`<div class="error-msg">ส่งไม่สำเร็จ: ${e.text||e.message||'กรุณาตั้งค่า EmailJS ก่อน'}</div>`;}
-  btn.disabled=false;btn.textContent='✉️ ส่งอีเมล์';
+    if(isBulkMode){
+      // ── bulk send ──
+      let ok=0,fail=0;
+      btn.textContent=`กำลังส่ง 0/${bulkRecipients.length}...`;
+      for(let i=0;i<bulkRecipients.length;i++){
+        const r=bulkRecipients[i];
+        const body=bodyRaw.replace(/{{ชื่อ}}/g,r.name||r.bizName).replace(/{{ชื่อร้าน}}/g,r.bizName);
+        try{
+          await sendViaBrevo(r.email,r.name||r.bizName,subject,body,attachUrl);
+          ok++;
+          // อัปเดต status → contacted
+          const snap=await db.collection('partner_contacts').where('bizName','==',r.bizName).limit(1).get();
+          if(!snap.empty&&snap.docs[0].data().status==='prospect'){
+            await snap.docs[0].ref.update({status:'contacted',updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+          }
+        }catch(e){fail++;}
+        btn.textContent=`กำลังส่ง ${i+1}/${bulkRecipients.length}...`;
+        if(i<bulkRecipients.length-1)await new Promise(r=>setTimeout(r,300));
+      }
+      msgEl.innerHTML=`<div class="success-msg">✅ ส่งสำเร็จ ${ok} ราย${fail>0?` · ล้มเหลว ${fail} ราย`:''}</div>`;
+      // บันทึก email log
+      await db.collection('email_logs').add({type:'bulk',subject,recipients:bulkRecipients.length,sentOk:ok,sentFail:fail,sentBy:currentUser.email,sentAt:firebase.firestore.FieldValue.serverTimestamp()});
+      setTimeout(()=>{closeModal('emailPartnerModal');loadContacts();},2000);
+    }else{
+      // ── single send ──
+      const body=bodyRaw.replace(/{{ชื่อ}}/g,emailPartnerTarget.contactName||emailPartnerTarget.bizName).replace(/{{ชื่อร้าน}}/g,emailPartnerTarget.bizName);
+      await sendViaBrevo(emailPartnerTarget.email,emailPartnerTarget.contactName||emailPartnerTarget.bizName,subject,body,attachUrl);
+      // อัปเดต status
+      const snap=await db.collection('partner_contacts').where('bizName','==',emailPartnerTarget.bizName).limit(1).get();
+      if(!snap.empty&&snap.docs[0].data().status==='prospect'){
+        await snap.docs[0].ref.update({status:'contacted',updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+      }
+      await db.collection('email_logs').add({type:'single',subject,to:emailPartnerTarget.email,bizName:emailPartnerTarget.bizName,sentBy:currentUser.email,sentAt:firebase.firestore.FieldValue.serverTimestamp()});
+      msgEl.innerHTML='<div class="success-msg">✅ ส่งอีเมล์สำเร็จแล้ว!</div>';
+      setTimeout(()=>{closeModal('emailPartnerModal');loadContacts();},1500);
+    }
+  }catch(e){
+    msgEl.innerHTML=`<div class="error-msg">ส่งไม่สำเร็จ: ${e.message}</div>`;
+  }
+  btn.disabled=false;btn.textContent='✉️ ส่ง';
 }
 
 // ─── Contacts ───
@@ -895,12 +1090,22 @@ function filterContacts(){
 function renderContacts(contacts){
   const el=document.getElementById('contactList');
   if(!contacts.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📒</div><p>ยังไม่มีผู้ประกอบการ<br><span style="font-size:12px">กด "+ เพิ่มผู้ประกอบการ"</span></p></div>';return;}
-  el.innerHTML=`<div class="card" style="padding:0;overflow:hidden"><table><thead><tr><th>ประเภท / ร้าน</th><th>คนติดต่อ</th><th>เบอร์ / อีเมล์</th><th>LINE / จังหวัด</th><th>สถานะ</th><th>Action</th></tr></thead><tbody id="contactTbody"></tbody></table></div><div style="font-size:12px;color:var(--gray-500);margin-top:8px">รวม ${contacts.length} รายการ</div>`;
+  el.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+    <div style="font-size:12px;color:var(--gray-500)">รวม ${contacts.length} รายการ <span id="selectedCount" style="color:var(--blue);font-weight:600"></span></div>
+    <div style="display:flex;gap:8px">
+      <button id="bulkEmailBtn" onclick="openBulkEmailModal()" style="display:none;padding:7px 14px;background:var(--blue);color:white;border:none;border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer">✉️ ส่งอีเมล์ที่เลือก (<span id="bulkCount">0</span>)</button>
+    </div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden"><table><thead><tr>
+    <th style="width:36px"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" style="cursor:pointer"></th>
+    <th>ประเภท / ร้าน</th><th>คนติดต่อ</th><th>เบอร์ / อีเมล์</th><th>LINE / จังหวัด</th><th>สถานะ</th><th>Action</th>
+  </tr></thead><tbody id="contactTbody"></tbody></table></div>`;
   const tbody=document.getElementById('contactTbody');
   contacts.forEach(c=>{
     const st=statusConfig[c.status]||statusConfig.prospect;
     const dt=c.createdAt?.toDate?c.createdAt.toDate().toLocaleDateString('th-TH'):'-';
     tbody.innerHTML+=`<tr>
+      <td><input type="checkbox" class="contact-cb" data-id="${c.id}" data-email="${c.email||''}" data-name="${c.bizName||''}" data-contact="${c.contactName||''}" onchange="updateBulkSelect()" style="cursor:pointer"></td>
       <td><div style="font-size:11px;color:var(--gray-500)">${bizTypeMap[c.bizType]||c.bizType||'-'}</div><strong>${c.bizName||'-'}</strong>${c.position?`<div style="font-size:11px;color:var(--gray-500)">${c.position}</div>`:''}</td>
       <td><strong>${c.contactName||'-'}</strong><div style="font-size:11px;color:var(--gray-500)">${dt}</div></td>
       <td>${c.phone?`<div><a href="tel:${c.phone}" style="color:var(--blue);text-decoration:none;font-size:13px">📞 ${c.phone}</a></div>`:''}${c.email?`<div><a href="mailto:${c.email}" style="color:var(--gray-500);text-decoration:none;font-size:12px">✉️ ${c.email}</a></div>`:''}</td>
