@@ -988,8 +988,7 @@ async function sendViaBrevo(toEmail, toName, subject, htmlBody, attachmentUrl=''
     sender: BREVO_SENDER,
     to: [{email:toEmail, name:toName}],
     subject: subject,
-    htmlContent: htmlBody.replace(/
-/g,'<br>')
+    htmlContent: htmlBody.split('\n').join('<br>')
   };
   if(attachmentUrl){
     payload.attachment=[{url:attachmentUrl, name:'document.pdf'}];
@@ -1108,8 +1107,8 @@ function renderContacts(contacts){
       <td><input type="checkbox" class="contact-cb" data-id="${c.id}" data-email="${c.email||''}" data-name="${c.bizName||''}" data-contact="${c.contactName||''}" onchange="updateBulkSelect()" style="cursor:pointer"></td>
       <td><div style="font-size:11px;color:var(--gray-500)">${bizTypeMap[c.bizType]||c.bizType||'-'}</div><strong>${c.bizName||'-'}</strong>${c.position?`<div style="font-size:11px;color:var(--gray-500)">${c.position}</div>`:''}</td>
       <td><strong>${c.contactName||'-'}</strong><div style="font-size:11px;color:var(--gray-500)">${dt}</div></td>
-      <td>${c.phone?`<div><a href="tel:${c.phone}" style="color:var(--blue);text-decoration:none;font-size:13px">📞 ${c.phone}</a></div>`:''}${c.email?`<div><a href="mailto:${c.email}" style="color:var(--gray-500);text-decoration:none;font-size:12px">✉️ ${c.email}</a></div>`:''}</td>
-      <td>${c.line?`<div style="font-size:12px">💬 ${c.line}</div>`:''}${c.province?`<div style="font-size:12px;color:var(--gray-500)">📍 ${c.province}</div>`:''}</td>
+      <td>${(c.phone?'<div><a href="tel:'+c.phone+'" style="color:var(--blue);text-decoration:none;font-size:13px">📞 '+c.phone+'</a></div>':'')}${(c.email?'<div><a href="mailto:'+c.email+'" style="color:var(--gray-500);text-decoration:none;font-size:12px">✉️ '+c.email+'</a></div>':'')}</td>
+      <td>${(c.line?'<div style="font-size:12px">💬 '+c.line+'</div>':'')}${(c.province?'<div style="font-size:12px;color:var(--gray-500)">📍 '+c.province+'</div>':'')}</td>
       <td><span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;background:${st.bg};color:${st.color}">${st.label}</span>${c.note?`<div style="font-size:10px;color:var(--gray-500);margin-top:3px;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${c.note}">📝 ${c.note}</div>`:''}</td>
       <td><div class="action-row">${c.email?`<button class="btn-icon btn-view" onclick="sendEmailToPartner('${c.email}','${c.bizName||''}','${c.contactName||''}')" title="ส่งอีเมล์">✉️</button>`:''}<button class="btn-icon btn-view" onclick="openEditContact('${c.id}')" title="แก้ไข">✏️</button><button class="btn-icon btn-reject" onclick="deleteContact('${c.id}')" title="ลบ">ลบ</button></div></td>
     </tr>`;
