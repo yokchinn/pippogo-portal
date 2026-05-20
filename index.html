@@ -655,7 +655,10 @@ function goRegStep(step){[1,2,3].forEach(s=>{document.getElementById('regStep'+s
 
 function getBizForm(type,d){
   const common=`<div class="form-section"><div class="form-section-title">📍 ข้อมูลพื้นฐาน</div>
-    <div class="field"><label>ชื่อสถานที่ *</label><input type="text" id="bName" value="${d.name||''}" placeholder="ชื่อสถานที่ของคุณ"></div>
+    <div class="field-row">
+      <div class="field"><label>ชื่อสถานที่ (ภาษาไทย) *</label><input type="text" id="bNameTh" value="${d.nameThai||d.name||''}" placeholder="ชื่อสถานที่ภาษาไทย"></div>
+      <div class="field"><label>ชื่อสถานที่ (English)</label><input type="text" id="bNameEn" value="${d.nameEnglish||''}" placeholder="Place name in English"></div>
+    </div>
     <div class="field-row">
       <div class="field"><label>จังหวัด *</label>
         <div style="position:relative">
@@ -759,7 +762,7 @@ function collectBizFormData(type){
   const g=id=>{const el=document.getElementById(id);return el?el.value:''};
   const gc=ids=>ids.filter(id=>{const el=document.getElementById(id);return el&&el.checked});
   const latVal=parseFloat(g('bLat'))||0,lngVal=parseFloat(g('bLng'))||0;
-  const base={name:g('bName'),province:g('bProvince'),phone:g('bPhone'),address:g('bAddress'),googleMapUrl:g('bMapUrl'),latitude:latVal,longitude:lngVal,defaultOpenTime:g('bDefaultOpen')||'09:00',defaultCloseTime:g('bDefaultClose')||'21:00',openNote:g('bOpenNote'),hours:(function(){var hh={};['mon','tue','wed','thu','fri','sat','sun'].forEach(function(k){var cb=document.getElementById('open-'+k);hh[k]={open:cb?cb.checked:true,openTime:document.getElementById('open-t-'+k)?.value||'09:00',closeTime:document.getElementById('close-t-'+k)?.value||'21:00'};});return hh;})(),photo1:getPhotoUrls()[0]||'',photo2:getPhotoUrls()[1]||'',photo3:getPhotoUrls()[2]||'',photos:getPhotoUrls(),category:BIZ_TYPES[type].cat};
+  const base={name:g('bNameTh')||g('bNameEn'),nameThai:g('bNameTh'),nameEnglish:g('bNameEn'),province:g('bProvince'),phone:g('bPhone'),address:g('bAddress'),googleMapUrl:g('bMapUrl'),latitude:latVal,longitude:lngVal,defaultOpenTime:g('bDefaultOpen')||'09:00',defaultCloseTime:g('bDefaultClose')||'21:00',openNote:g('bOpenNote'),hours:(function(){var hh={};['mon','tue','wed','thu','fri','sat','sun'].forEach(function(k){var cb=document.getElementById('open-'+k);hh[k]={open:cb?cb.checked:true,openTime:document.getElementById('open-t-'+k)?.value||'09:00',closeTime:document.getElementById('close-t-'+k)?.value||'21:00'};});return hh;})(),photo1:getPhotoUrls()[0]||'',photo2:getPhotoUrls()[1]||'',photo3:getPhotoUrls()[2]||'',photos:getPhotoUrls(),category:BIZ_TYPES[type].cat};
   const extras={
     hotel:()=>({allowedPetTypes:g('bPetTypes'),maxPetWeight:g('bMaxWeight'),maxPetCount:g('bMaxPets'),petFeePerNight:g('bPetFee'),petDeposit:g('bPetDeposit'),checkInTime:g('bCheckIn'),checkOutTime:g('bCheckOut'),cancellationPolicy:g('bCancel'),amenities:Array.from(document.querySelectorAll('.amenity-cb:checked')).map(c=>c.value).join(','),extraGuestFeePerNight:'500',baseGuests:'2'}),
     cafe:()=>({indoorOutdoor:g('bIndoorOutdoor'),subType:g('bSubType'),description:g('bDesc'),petPolicy:gc(['cLeash','cStroller','cAllPets','cDogOnly']).join(','),petDetail:g('bPetDetail')}),
@@ -1259,7 +1262,7 @@ function renderPlaces(places){
   if(!places.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📍</div><p>ไม่พบสถานที่</p></div>';return;}
   el.innerHTML='<div class="card"><table><thead><tr><th>ประเภท</th><th>ชื่อ</th><th>จังหวัด</th><th>เบอร์</th><th>แก้ไขล่าสุด</th><th>สถานะ</th><th></th></tr></thead><tbody id="placesTbody"></tbody></table></div>';
   const tbody=document.getElementById('placesTbody');const catMap={hotel:'🏨',cafe:'🍽️',mall:'🏬',attraction:'🌳',vet:'🏥',petshop:'🛍️',boarding:'🏡'};
-  places.forEach(d=>{const lastEdit=d.lastEditedAt?new Date(d.lastEditedAt.seconds*1000).toLocaleDateString('th-TH'):'-';const lastEditor=d.lastEditedBy||'-';const displayName=d.name||d.nameThai||d.nameEnglish||'-';tbody.innerHTML+=`<tr><td>${catMap[d.category]||'📍'} ${d.category||'-'}</td><td><strong>${displayName}</strong>${d.nameThai&&d.name&&d.nameThai!==d.name?`<br><span style="font-size:11px;color:var(--gray-500)">${d.nameThai}</span>`:''}</td><td>${d.province||'-'}</td><td>${d.phone||'-'}</td><td style="font-size:11px;color:var(--gray-500)">${lastEdit!=='-'?`${lastEdit}<br><span style="color:var(--blue)">${lastEditor}</span>`:'-'}</td><td><span class="badge badge-approved">Live</span></td><td><div class="action-row"><button class="btn-icon btn-view" onclick="openEditPlace('${d.id}')">✏️ แก้ไข</button><button class="btn-icon btn-reject" onclick="deletePlace('${d.id}')">ลบ</button></div></td></tr>`;});
+  places.forEach(d=>{const lastEdit=d.lastEditedAt?new Date(d.lastEditedAt.seconds*1000).toLocaleDateString('th-TH'):'-';const lastEditor=d.lastEditedBy||'-';const displayName=d.nameThai||d.name||d.nameEnglish||'-';const subName=d.nameEnglish||'';tbody.innerHTML+=`<tr><td>${catMap[d.category]||'📍'} ${d.category||'-'}</td><td><strong>${displayName}</strong>${subName&&subName!==displayName?`<br><span style="font-size:11px;color:var(--gray-500)">${subName}</span>`:''}</td><td>${d.province||'-'}</td><td>${d.phone||'-'}</td><td style="font-size:11px;color:var(--gray-500)">${lastEdit!=='-'?`${lastEdit}<br><span style="color:var(--blue)">${lastEditor}</span>`:'-'}</td><td><span class="badge badge-approved">Live</span></td><td><div class="action-row"><button class="btn-icon btn-view" onclick="openEditPlace('${d.id}')">✏️ แก้ไข</button><button class="btn-icon btn-reject" onclick="deletePlace('${d.id}')">ลบ</button></div></td></tr>`;});
 }
 async function deletePlace(id){if(!confirm('ลบสถานที่นี้ออกจากแอปด้วย?'))return;await db.collection('places').doc(id).delete();loadPlaces('all');}
 
@@ -1411,14 +1414,19 @@ async function saveNewPlace(){
   if(!type){msgEl.innerHTML='<div class="error-msg">กรุณาเลือกประเภทสถานที่</div>';return;}
   if(!validatePhotos()){msgEl.innerHTML='<div class="error-msg">กรุณาใส่ URL รูปภาพอย่างน้อย 3 รูป</div>';return;}
   const data=collectBizFormData(type);
-  if(!data.name||!data.province){msgEl.innerHTML='<div class="error-msg">กรุณากรอกชื่อสถานที่และจังหวัด</div>';return;}
-  // ── ตรวจสอบชื่อซ้ำ ──
-  const dupSnap=await db.collection('places').where('name','==',data.name).limit(3).get();
-  if(!dupSnap.empty){
-    const ex=dupSnap.docs[0].data();
-    const ok=confirm(`⚠️ มีสถานที่ชื่อ "${data.name}" อยู่แล้ว (${ex.category||''} · ${ex.province||'-'})\nต้องการเพิ่มซ้ำหรือไม่?`);
+  if((!data.nameThai&&!data.nameEnglish)||!data.province){msgEl.innerHTML='<div class="error-msg">กรุณากรอกชื่อสถานที่และจังหวัด</div>';return;}
+  // ── ตรวจสอบชื่อซ้ำ (Admin เท่านั้น) ──
+  const searchName=data.nameThai||data.nameEnglish||'';
+  const dupSnap=await db.collection('places').where('nameThai','==',searchName).limit(5).get();
+  const dupSnap2=searchName?await db.collection('places').where('name','==',searchName).limit(5).get():null;
+  const allDups=[...dupSnap.docs,...(dupSnap2?dupSnap2.docs:[])];
+  const uniqueDups=[...new Map(allDups.map(d=>[d.id,d])).values()];
+  if(uniqueDups.length>0){
+    const dupList=uniqueDups.slice(0,3).map(d=>{const dd=d.data();return (dd.nameThai||dd.name||'?')+' ('+dd.province+')';}).join(', ');
+    const ok=confirm('⚠️ พบสถานที่ที่มีชื่อคล้ายกัน:\n'+dupList+'\n\nต้องการเพิ่มต่อไปหรือไม่? (อาจเป็นคนละสาขา)');
     if(!ok)return;
   }
+
   data.sync_status='synced';data.addedBy='admin';data.addedAt=firebase.firestore.FieldValue.serverTimestamp();
   try{await db.collection('places').add(data);closeModal('addPlaceModal');loadPlaces('all');loadAdminData();alert('✅ เพิ่มสถานที่สำเร็จ! ขึ้นแอปแล้ว');}
   catch(e){msgEl.innerHTML='<div class="error-msg">เกิดข้อผิดพลาด: '+e.message+'</div>';}
