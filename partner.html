@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PippoGO — Partner Portal</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans Thai',sans-serif;background:#f7f9fe;color:#333E50;min-height:100vh;}
+:root{
+  --blue:#2561E4;--blue-light:#EBF1FD;--blue-dark:#1a4fd4;
+  --yellow:#FFD106;--green:#1a6b35;--green-light:#e3f5e9;
+  --red:#b00020;--red-light:#fdecea;--orange:#BA7517;--orange-light:#fff8e6;
+  --gray-50:#FFFEFB;--gray-100:#f7f9fe;--gray-200:#e8edf5;
+  --gray-400:#D2D1D0;--gray-500:#6b7a8d;--gray-700:#333E50;
+  --shadow:0 2px 12px rgba(0,0,0,0.08);--radius:12px;--font:'Noto Sans Thai',sans-serif;
+}
+
+/* AUTH */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-height(135deg,#1a3fa8,var(--blue));}
+.auth-wrap{background:linear-gradient(135deg,#1a3fa8 0%,var(--blue) 100%);}
+.auth-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:32px;width:100%;max-width:460px;}
+.auth-logo{text-align:center;margin-bottom:24px;}
+.auth-logo-box{background:var(--blue);border-radius:16px;padding:12px 28px;display:inline-block;margin-bottom:8px;}
+.auth-logo-box span{font-size:24px;font-weight:700;color:white;}
+.auth-logo-box span.go{color:var(--yellow);}
+.auth-logo p{font-size:13px;color:var(--gray-500);}
+.tab-row{display:flex;background:var(--gray-100);border-radius:8px;padding:4px;margin-bottom:20px;}
+.tab-btn{flex:1;padding:8px;border:none;background:transparent;border-radius:6px;font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;color:var(--gray-500);transition:all .2s;}
+.tab-btn.active{background:white;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.1);}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:5px;}
+.field input,.field select{width:100%;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:var(--font);font-size:14px;color:var(--gray-700);outline:none;transition:border-color .2s;}
+.field input:focus,.field select:focus{border-color:var(--blue);}
+.btn-primary{width:100%;padding:12px;border:none;border-radius:8px;background:var(--blue);color:white;font-family:var(--font);font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-primary:hover{background:var(--blue-dark);}
+.btn-primary:disabled{background:var(--gray-400);cursor:not-allowed;}
+.error-msg{background:var(--red-light);color:var(--red);padding:10px;border-radius:8px;font-size:13px;margin-bottom:12px;}
+.success-msg{background:var(--green-light);color:var(--green);padding:10px;border-radius:8px;font-size:13px;margin-bottom:12px;}
+
+/* APP LAYOUT */
+.app{display:none;min-height:100vh;flex-direction:column;}
+.app.visible{display:flex;}
+.topbar{background:var(--blue);padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.topbar-logo{font-size:16px;font-weight:700;color:white;}
+.topbar-logo span{color:var(--yellow);}
+.biz-badge{background:rgba(255,255,255,.2);border-radius:20px;padding:4px 12px;font-size:11px;color:white;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.user-email{font-size:11px;color:rgba(255,255,255,.7);}
+.logout-btn{background:rgba(255,255,255,.15);border:none;border-radius:20px;padding:6px 14px;font-family:var(--font);font-size:12px;color:white;cursor:pointer;}
+
+/* BOTTOM NAV */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--gray-200);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px 8px;cursor:pointer;border:none;background:transparent;font-family:var(--font);color:var(--gray-500);font-size:10px;gap:4px;transition:color .2s;}
+.nav-item.active{color:var(--blue);}
+.nav-icon{font-size:20px;}
+.main{flex:1;padding:16px;padding-bottom:80px;}
+
+/* CARDS */
+.card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:16px;}
+.card-title{font-size:15px;font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--gray-200);}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px;}
+.stat-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;}
+.stat-num{font-size:28px;font-weight:700;color:var(--blue);}
+.stat-label{font-size:12px;color:var(--gray-500);margin-top:4px;}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-pending{background:var(--orange-light);color:var(--orange);}
+.badge-approved{background:var(--green-light);color:var(--green);}
+.badge-rejected{background:var(--red-light);color:var(--red);}
+.badge-confirmed{background:var(--blue-light);color:var(--blue);}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:10px 12px;background:var(--gray-100);color:var(--gray-500);font-weight:600;font-size:11px;text-transform:uppercase;}
+td{padding:12px;border-bottom:1px solid var(--gray-200);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+
+/* FORM */
+.form-section{margin-bottom:20px;}
+.form-section-title{font-size:13px;font-weight:700;color:var(--blue);margin-bottom:12px;padding:8px 12px;background:var(--blue-light);border-radius:8px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.field textarea{width:100%;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:var(--font);font-size:14px;color:var(--gray-700);outline:none;resize:vertical;min-height:80px;}
+.field textarea:focus{border-color:var(--blue);}
+
+/* PENDING BANNER */
+.pending-banner{background:var(--orange-light);border:1px solid var(--orange);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:16px;font-size:13px;color:var(--orange);}
+
+/* PAGE */
+.page{display:none;}
+.page.active{display:block;}
+.page-title{font-size:20px;font-weight:700;margin-bottom:4px;}
+.page-sub{font-size:13px;color:var(--gray-500);margin-bottom:20px;}
+
+/* BOOKING CARD */
+.booking-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:12px;}
+.booking-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.booking-name{font-size:14px;font-weight:700;}
+.booking-detail{font-size:12px;color:var(--gray-500);margin-top:2px;}
+.booking-actions{display:flex;gap:8px;margin-top:12px;}
+.btn-sm{padding:6px 14px;border-radius:8px;border:none;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;}
+.btn-approve{background:var(--green-light);color:var(--green);}
+.btn-reject{background:var(--red-light);color:var(--red);}
+
+@media(max-width:480px){.field-row{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- ── AUTH SCREEN ── -->
+<div id="authScreen" class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-box"><span>Pippo</span><span class="go">GO!</span></div>
+      <p>Partner Portal — ระบบสำหรับผู้ประกอบการ</p>
+    </div>
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="switchAuthTab('login')">เข้าสู่ระบบ</button>
+      <button class="tab-btn" onclick="switchAuthTab('register')">สมัครใหม่</button>
+    </div>
+    <div id="authMsg"></div>
+
+    <!-- LOGIN -->
+    <div id="loginForm">
+      <div class="field"><label>อีเมล</label><input type="email" id="loginEmail" placeholder="email@example.com"></div>
+      <div class="field"><label>รหัสผ่าน</label><input type="password" id="loginPassword" placeholder="••••••••"></div>
+      <button class="btn-primary" onclick="doLogin()">เข้าสู่ระบบ</button>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="registerForm" style="display:none">
+      <div class="field"><label>ชื่อร้าน / โรงแรม *</label><input type="text" id="regBizName" placeholder="ชื่อสถานที่ของคุณ"></div>
+      <div class="field-row">
+        <div class="field"><label>อีเมล *</label><input type="email" id="regEmail" placeholder="email@example.com"></div>
+        <div class="field"><label>รหัสผ่าน *</label><input type="password" id="regPassword" placeholder="อย่างน้อย 6 ตัว"></div>
+      </div>
+      <div class="field">
+        <label>ประเภทสถานที่ *</label>
+        <select id="regCategory">
+          <option value="">-- เลือกประเภท --</option>
+          <option value="hotel">🏨 โรงแรม / ที่พัก</option>
+          <option value="cafe">🍽️ ร้านอาหาร / คาเฟ่</option>
+          <option value="mall">🏬 ห้างสรรพสินค้า</option>
+          <option value="attraction">🌳 สถานที่ท่องเที่ยว</option>
+          <option value="vet">🏥 โรงพยาบาลสัตว์</option>
+          <option value="petshop">🛍️ Pet Shop</option>
+          <option value="boarding">🏡 รับฝากสัตว์เลี้ยง</option>
+        </select>
+      </div>
+      <div class="field"><label>เบอร์โทรติดต่อ</label><input type="tel" id="regPhone" placeholder="0812345678"></div>
+      <button class="btn-primary" onclick="doRegister()">สมัครสมาชิก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN APP ── -->
+<div id="mainApp" class="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">Pippo<span>GO!</span></div>
+      <div class="biz-badge" id="bizBadge">Partner</div>
+    </div>
+    <div class="topbar-right">
+      <span class="user-email" id="userEmailDisplay"></span>
+      <button class="logout-btn" onclick="doLogout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- PENDING BANNER -->
+    <div class="pending-banner" id="pendingBanner" style="display:none">
+      ⏳ มีการแก้ไขที่รอ Admin ตรวจสอบอยู่ กรุณารอการอนุมัติก่อนข้อมูลจะขึ้นแอป
+    </div>
+
+    <!-- PAGE: ภาพรวม -->
+    <div class="page active" id="pageDashboard">
+      <div class="page-title" id="dashTitle">ยินดีต้อนรับ</div>
+      <div class="page-sub" id="dashSub">ภาพรวมสถานที่ของคุณ</div>
+      <div class="stat-grid" id="statGrid"></div>
+      <div id="dashExtra"></div>
+    </div>
+
+    <!-- PAGE: ข้อมูลร้าน -->
+    <div class="page" id="pageInfo">
+      <div class="page-title">ข้อมูลสถานที่</div>
+      <div class="page-sub">แก้ไขแล้วจะส่งให้ Admin ตรวจสอบก่อนขึ้นแอป</div>
+      <div id="infoFormWrap"></div>
+    </div>
+
+    <!-- PAGE: การจอง (โรงแรมเท่านั้น) -->
+    <div class="page" id="pageBookings">
+      <div class="page-title">การจอง</div>
+      <div class="page-sub">รายการจองที่เข้ามา</div>
+      <div id="bookingsList"></div>
+    </div>
+
+    <!-- PAGE: สถานะการแก้ไข -->
+    <div class="page" id="pageStatus">
+      <div class="page-title">สถานะการแก้ไข</div>
+      <div class="page-sub">ประวัติการส่งแก้ไขข้อมูล</div>
+      <div id="statusList"></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav" id="bottomNav">
+    <button class="nav-item active" onclick="showPage('Dashboard')">
+      <span class="nav-icon">🏠</span><span>ภาพรวม</span>
+    </button>
+    <button class="nav-item" onclick="showPage('Info')">
+      <span class="nav-icon">✏️</span><span>ข้อมูลร้าน</span>
+    </button>
+    <button class="nav-item hotel-only" onclick="showPage('Bookings')" style="display:none">
+      <span class="nav-icon">📋</span><span>การจอง</span>
+    </button>
+    <button class="nav-item" onclick="showPage('Status')">
+      <span class="nav-icon">⏳</span><span>สถานะ</span>
+    </button>
+  </div>
+</div>
+
+<script>
+// ── Firebase Config ──
+const firebaseConfig = {
+  apiKey: "AIzaSyD88Om-vKnpvX2RUSVifrSH_EA0gBcrHOA",
+  authDomain: "pippo-go.firebaseapp.com",
+  projectId: "pippo-go",
+  storageBucket: "pippo-go.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+const ADMIN_EMAILS = ['admin@pippogo.com','seth@pippogo.com','yok-chinn@hotmail.com'];
+const CAT_NAMES = {hotel:'🏨 โรงแรม',cafe:'🍽️ ร้านอาหาร/คาเฟ่',mall:'🏬 ห้าง',attraction:'🌳 ท่องเที่ยว',vet:'🏥 รพ.สัตว์',petshop:'🛍️ Pet Shop',boarding:'🏡 รับฝาก'};
+
+let currentUser = null;
+let bizData = null;
+let placeData = null;
+
+// ── AUTH ──
+auth.onAuthStateChanged(async user => {
+  if (!user) { showAuth(); return; }
+  // Admin ถูก redirect ไป index.html
+  if (ADMIN_EMAILS.includes(user.email)) {
+    window.location.href = 'index.html';
+    return;
+  }
+  currentUser = user;
+  await loadBizData();
+  showApp();
+});
+
+async function loadBizData() {
+  const doc = await db.collection('business_accounts').doc(currentUser.uid).get();
+  if (doc.exists) {
+    bizData = doc.data();
+    if (bizData.placeId) {
+      const placeDoc = await db.collection('places').doc(bizData.placeId).get();
+      if (placeDoc.exists) placeData = { id: placeDoc.id, ...placeDoc.data() };
+    }
+  }
+}
+
+function showAuth() {
+  document.getElementById('authScreen').style.display = 'flex';
+  document.getElementById('mainApp').classList.remove('visible');
+}
+
+function showApp() {
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('mainApp').classList.add('visible');
+  document.getElementById('userEmailDisplay').textContent = currentUser.email;
+
+  if (bizData) {
+    document.getElementById('bizBadge').textContent = CAT_NAMES[bizData.category] || 'Partner';
+    if (bizData.category === 'hotel') {
+      document.querySelectorAll('.hotel-only').forEach(el => el.style.display = 'flex');
+    }
+    loadDashboard();
+    checkPending();
+  } else {
+    // ยังไม่มีข้อมูล — ให้กรอก
+    showPage('Info');
+  }
+}
+
+// ── AUTH ACTIONS ──
+function switchAuthTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', (tab==='login'&&i===0)||(tab==='register'&&i===1)));
+  document.getElementById('loginForm').style.display = tab==='login'?'block':'none';
+  document.getElementById('registerForm').style.display = tab==='register'?'block':'none';
+  document.getElementById('authMsg').innerHTML = '';
+}
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  const msg = document.getElementById('authMsg');
+  if (!email||!pass) { msg.innerHTML = '<div class="error-msg">กรุณากรอกอีเมลและรหัสผ่าน</div>'; return; }
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+  } catch(e) {
+    msg.innerHTML = `<div class="error-msg">เข้าสู่ระบบไม่สำเร็จ: ${e.message}</div>`;
+  }
+}
+
+async function doRegister() {
+  const bizName = document.getElementById('regBizName').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const pass = document.getElementById('regPassword').value;
+  const category = document.getElementById('regCategory').value;
+  const phone = document.getElementById('regPhone').value.trim();
+  const msg = document.getElementById('authMsg');
+
+  if (!bizName||!email||!pass||!category) {
+    msg.innerHTML = '<div class="error-msg">กรุณากรอกข้อมูลให้ครบ</div>'; return;
+  }
+  try {
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    await db.collection('business_accounts').doc(cred.user.uid).set({
+      email, bizName, category, phone,
+      status: 'pending',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    msg.innerHTML = '<div class="success-msg">✅ สมัครสำเร็จ! Admin จะตรวจสอบและเปิดใช้งานให้เร็วๆ นี้</div>';
+  } catch(e) {
+    msg.innerHTML = `<div class="error-msg">สมัครไม่สำเร็จ: ${e.message}</div>`;
+  }
+}
+
+function doLogout() {
+  auth.signOut();
+}
+
+// ── NAVIGATION ──
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page'+name).classList.add('active');
+  const idx = ['Dashboard','Info','Bookings','Status'].indexOf(name);
+  const navItems = document.querySelectorAll('.nav-item');
+  if (navItems[idx]) navItems[idx].classList.add('active');
+
+  if (name==='Info') loadInfoForm();
+  if (name==='Bookings') loadBookings();
+  if (name==='Status') loadStatus();
+}
+
+// ── DASHBOARD ──
+async function loadDashboard() {
+  const title = document.getElementById('dashTitle');
+  const sub = document.getElementById('dashSub');
+  const grid = document.getElementById('statGrid');
+
+  title.textContent = `สวัสดี, ${bizData?.bizName || currentUser.email}`;
+  sub.textContent = CAT_NAMES[bizData?.category] || 'Partner';
+
+  if (bizData?.category === 'hotel') {
+    // โรงแรม: นับการจอง
+    const snap = await db.collection('bookings').where('hotelOwnerId','==',currentUser.uid).get();
+    const total = snap.size;
+    const pending = snap.docs.filter(d => d.data().status === 'pending').length;
+    grid.innerHTML = `
+      <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">การจองทั้งหมด</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--orange)">${pending}</div><div class="stat-label">รอยืนยัน</div></div>
+    `;
+    // แสดงการจองล่าสุด
+    const recent = snap.docs.sort((a,b) => b.data().createdAt?.seconds - a.data().createdAt?.seconds).slice(0,3);
+    document.getElementById('dashExtra').innerHTML = recent.length ? `
+      <div class="card">
+        <div class="card-title">การจองล่าสุด</div>
+        ${recent.map(d => {
+          const b = d.data();
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gray-200)">
+            <div>
+              <div style="font-size:13px;font-weight:600">${b.guestName||'-'}</div>
+              <div style="font-size:11px;color:var(--gray-500)">${b.checkIn||''} → ${b.checkOut||''}</div>
+            </div>
+            <span class="badge badge-${b.status==='confirmed'?'confirmed':'pending'}">${b.status==='confirmed'?'ยืนยัน':'รอ'}</span>
+          </div>`;
+        }).join('')}
+      </div>` : '';
+  } else {
+    // ร้านค้าทั่วไป
+    const snap = await db.collection('pending_updates').where('submittedBy','==',currentUser.uid).get();
+    const pending = snap.docs.filter(d => d.data().status === 'pending').length;
+    grid.innerHTML = `
+      <div class="stat-card"><div class="stat-num" style="color:var(--green)">✓</div><div class="stat-label">สถานะบัญชี</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--orange)">${pending}</div><div class="stat-label">รอ Approve</div></div>
+    `;
+  }
+}
+
+// ── CHECK PENDING ──
+async function checkPending() {
+  const snap = await db.collection('pending_updates')
+    .where('submittedBy','==',currentUser.uid)
+    .where('status','==','pending').get();
+  document.getElementById('pendingBanner').style.display = snap.empty ? 'none' : 'flex';
+}
+
+// ── INFO FORM ──
+function loadInfoForm() {
+  const d = placeData || {};
+  const isHotel = bizData?.category === 'hotel';
+  document.getElementById('infoFormWrap').innerHTML = `
+    <div class="card">
+      <div class="card-title">ข้อมูลพื้นฐาน</div>
+      <div class="form-section">
+        <div class="field-row">
+          <div class="field"><label>ชื่อร้าน (ไทย) *</label><input type="text" id="iNameTh" value="${d.nameThai||d.name||bizData?.bizName||''}"></div>
+          <div class="field"><label>ชื่อร้าน (English)</label><input type="text" id="iNameEn" value="${d.nameEnglish||''}"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>เบอร์โทร</label><input type="tel" id="iPhone" value="${d.phone||bizData?.phone||''}"></div>
+          <div class="field"><label>จังหวัด</label><input type="text" id="iProvince" value="${d.province||''}"></div>
+        </div>
+        <div class="field"><label>ที่อยู่</label><textarea id="iAddress">${d.address||''}</textarea></div>
+        <div class="field"><label>Google Maps URL</label><input type="url" id="iMapUrl" value="${d.googleMapUrl||''}" placeholder="https://maps.google.com/..."></div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-title">⏰ เวลาเปิด-ปิด</div>
+        <div class="field-row">
+          <div class="field"><label>เปิด</label><input type="time" id="iOpen" value="${d.defaultOpenTime||'09:00'}"></div>
+          <div class="field"><label>ปิด</label><input type="time" id="iClose" value="${d.defaultCloseTime||'21:00'}"></div>
+        </div>
+        <div class="field"><label>หมายเหตุเวลา</label><input type="text" id="iOpenNote" value="${d.openNote||''}" placeholder="เช่น ปิดวันจันทร์"></div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-title">🐾 นโยบายสัตว์เลี้ยง</div>
+        <div class="field"><label>สัตว์ที่รับได้</label><input type="text" id="iPetPolicy" value="${d.petPolicy||''}" placeholder="เช่น สุนัขและแมว ไม่เกิน 10 กก."></div>
+        <div class="field"><label>รายละเอียดเพิ่มเติม</label><textarea id="iPetDetail">${d.petDetail||''}</textarea></div>
+      </div>
+      ${isHotel ? `
+      <div class="form-section">
+        <div class="form-section-title">🏨 ข้อมูลโรงแรม</div>
+        <div class="field-row">
+          <div class="field"><label>Check-in</label><input type="time" id="iCheckIn" value="${d.checkInTime||'14:00'}"></div>
+          <div class="field"><label>Check-out</label><input type="time" id="iCheckOut" value="${d.checkOutTime||'12:00'}"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>ค่าสัตว์เลี้ยง/คืน (บาท)</label><input type="number" id="iPetFee" value="${d.petFeePerNight||''}"></div>
+          <div class="field"><label>น้ำหนักสูงสุด (กก.)</label><input type="number" id="iMaxWeight" value="${d.maxPetWeight||''}"></div>
+        </div>
+        <div class="field"><label>นโยบายยกเลิก</label><textarea id="iCancel">${d.cancellationPolicy||''}</textarea></div>
+      </div>` : ''}
+      <div class="field"><label>คำอธิบายร้าน</label><textarea id="iDesc">${d.description||''}</textarea></div>
+      <button class="btn-primary" onclick="submitInfoUpdate()">ส่งแก้ไขให้ Admin ตรวจสอบ</button>
+    </div>
+  `;
+}
+
+async function submitInfoUpdate() {
+  const g = id => { const el=document.getElementById(id); return el?el.value:''; };
+  const isHotel = bizData?.category === 'hotel';
+  const changes = {
+    nameThai: g('iNameTh'), nameEnglish: g('iNameEn'),
+    phone: g('iPhone'), province: g('iProvince'),
+    address: g('iAddress'), googleMapUrl: g('iMapUrl'),
+    defaultOpenTime: g('iOpen'), defaultCloseTime: g('iClose'),
+    openNote: g('iOpenNote'), petPolicy: g('iPetPolicy'),
+    petDetail: g('iPetDetail'), description: g('iDesc'),
+  };
+  if (isHotel) {
+    changes.checkInTime = g('iCheckIn');
+    changes.checkOutTime = g('iCheckOut');
+    changes.petFeePerNight = parseFloat(g('iPetFee'))||0;
+    changes.maxPetWeight = parseFloat(g('iMaxWeight'))||0;
+    changes.cancellationPolicy = g('iCancel');
+  }
+  try {
+    await db.collection('pending_updates').add({
+      placeId: bizData?.placeId || null,
+      submittedBy: currentUser.uid,
+      bizName: bizData?.bizName || '',
+      category: bizData?.category || '',
+      email: currentUser.email,
+      changes,
+      status: 'pending',
+      submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    alert('✅ ส่งข้อมูลแล้ว! Admin จะตรวจสอบภายใน 1-2 วันทำการ');
+    checkPending();
+    showPage('Status');
+  } catch(e) {
+    alert('เกิดข้อผิดพลาด: ' + e.message);
+  }
+}
+
+// ── BOOKINGS (Hotel only) ──
+async function loadBookings() {
+  const el = document.getElementById('bookingsList');
+  el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gray-500)">⏳ กำลังโหลด...</div>';
+  const snap = await db.collection('bookings').where('hotelOwnerId','==',currentUser.uid)
+    .orderBy('createdAt','desc').limit(20).get();
+  if (snap.empty) { el.innerHTML = '<div class="card" style="text-align:center;color:var(--gray-500)">ยังไม่มีการจอง</div>'; return; }
+  el.innerHTML = snap.docs.map(doc => {
+    const b = doc.data();
+    const isPending = b.status === 'pending';
+    return `<div class="booking-card">
+      <div class="booking-header">
+        <div>
+          <div class="booking-name">${b.guestName||'-'}</div>
+          <div class="booking-detail">📞 ${b.guestPhone||'-'} · ✉️ ${b.guestEmail||'-'}</div>
+          <div class="booking-detail">🐾 ${b.petType||'สัตว์เลี้ยง'} ${b.petWeight?`· ${b.petWeight} กก.`:''}</div>
+          <div class="booking-detail">📅 ${b.checkIn||''} → ${b.checkOut||''} · ${b.rooms||1} ห้อง</div>
+          ${b.specialRequest?`<div class="booking-detail" style="color:var(--orange)">📝 ${b.specialRequest}</div>`:''}
+        </div>
+        <span class="badge badge-${b.status==='confirmed'?'confirmed':b.status==='rejected'?'rejected':'pending'}">${b.status==='confirmed'?'ยืนยัน':b.status==='rejected'?'ปฏิเสธ':'รอ'}</span>
+      </div>
+      ${isPending?`<div class="booking-actions">
+        <button class="btn-sm btn-approve" onclick="updateBooking('${doc.id}','confirmed')">✅ ยืนยัน</button>
+        <button class="btn-sm btn-reject" onclick="updateBooking('${doc.id}','rejected')">❌ ปฏิเสธ</button>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+async function updateBooking(id, status) {
+  await db.collection('bookings').doc(id).update({ status, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+  loadBookings();
+}
+
+// ── STATUS ──
+async function loadStatus() {
+  const el = document.getElementById('statusList');
+  el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gray-500)">⏳ กำลังโหลด...</div>';
+  const snap = await db.collection('pending_updates').where('submittedBy','==',currentUser.uid)
+    .orderBy('submittedAt','desc').limit(10).get();
+  if (snap.empty) { el.innerHTML = '<div class="card" style="text-align:center;color:var(--gray-500)">ยังไม่มีประวัติการแก้ไข</div>'; return; }
+  el.innerHTML = `<div class="card">` + snap.docs.map(doc => {
+    const d = doc.data();
+    const date = d.submittedAt?.toDate()?.toLocaleDateString('th-TH')||'';
+    return `<div style="padding:12px 0;border-bottom:1px solid var(--gray-200)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:13px;font-weight:600">แก้ไขข้อมูล${d.bizName?` · ${d.bizName}`:''}</div>
+          <div style="font-size:11px;color:var(--gray-500)">${date}</div>
+          ${d.rejectReason?`<div style="font-size:12px;color:var(--red);margin-top:4px">เหตุผล: ${d.rejectReason}</div>`:''}
+        </div>
+        <span class="badge badge-${d.status==='approved'?'approved':d.status==='rejected'?'rejected':'pending'}">${d.status==='approved'?'อนุมัติ':d.status==='rejected'?'ไม่อนุมัติ':'รอตรวจสอบ'}</span>
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+}
+</script>
+</body>
+</html>
