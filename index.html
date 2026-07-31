@@ -112,6 +112,8 @@ tr:hover td{background:var(--gray-50);}
 .info-label{color:var(--gray-500);}
 .flex-between{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
 .loading{text-align:center;padding:40px;color:var(--gray-500);font-size:14px;}
+.skeleton{background:linear-gradient(90deg,var(--gray-100) 25%,var(--gray-200) 50%,var(--gray-100) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:8px;height:60px;margin-bottom:8px;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .spinner{display:inline-block;width:24px;height:24px;border:3px solid var(--gray-200);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .empty-state{text-align:center;padding:48px 20px;color:var(--gray-500);}
@@ -1083,8 +1085,8 @@ const statusConfig={prospect:{label:'Prospect',color:'#BA7517',bg:'#fff8e6'},con
 const bizTypeMap={hotel:'🏨 โรงแรม',cafe:'🍽️ ร้านอาหาร',mall:'🏬 ห้าง',vet:'🏥 รพ.สัตว์',petshop:'🛍️ Pet Shop',other:'อื่นๆ'};
 
 async function loadContacts(){
-  const el=document.getElementById('contactList');el.innerHTML='<div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div>';
-  const snap=await db.collection('partner_contacts').orderBy('createdAt','desc').get();
+  const el=document.getElementById('contactList');el.innerHTML='<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
+  const snap=await db.collection('partner_contacts').orderBy('createdAt','desc').limit(100).get();
   allContactsCache=snap.docs.map(d=>({id:d.id,...d.data()}));
   // populate province filter
   const provinces=[...new Set(allContactsCache.map(c=>c.province).filter(Boolean))].sort();
@@ -1200,7 +1202,7 @@ async function loadAdminData(){
 }
 
 async function loadReviewList(){
-  const el=document.getElementById('reviewList');el.innerHTML='<div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div>';
+  const el=document.getElementById('reviewList');el.innerHTML='<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
   const snap=await db.collection('pending_updates').orderBy('submittedAt','desc').limit(50).get();
   if(snap.empty){el.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><p>ไม่มีรายการรอ</p></div>';return;}
   el.innerHTML='<div class="card"><table><thead><tr><th>วันที่</th><th>ประเภท</th><th>ชื่อสถานที่</th><th>อีเมล</th><th>สถานะ</th><th>Action</th></tr></thead><tbody id="reviewTbody"></tbody></table></div>';
@@ -1246,7 +1248,7 @@ async function quickApprove(id){
 async function quickReject(id){await db.collection('pending_updates').doc(id).update({status:'rejected',rejectedAt:firebase.firestore.FieldValue.serverTimestamp()});loadReviewList();loadAdminData();}
 
 async function loadUsers(){
-  const el=document.getElementById('userList');el.innerHTML='<div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div>';
+  const el=document.getElementById('userList');el.innerHTML='<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
   const snap=await db.collection('business_accounts').orderBy('createdAt','desc').get();
   if(snap.empty){el.innerHTML='<div class="empty-state"><div class="empty-icon">👥</div><p>ยังไม่มีผู้ประกอบการ</p></div>';return;}
   el.innerHTML='<div class="card"><table><thead><tr><th>ประเภท</th><th>ชื่อธุรกิจ / ผู้ติดต่อ</th><th>อีเมล / เบอร์</th><th>สถานะ</th><th>Action</th></tr></thead><tbody id="userTbody"></tbody></table></div>';
@@ -1256,8 +1258,11 @@ async function loadUsers(){
 async function approveUser(id){const doc=await db.collection('business_accounts').doc(id).get();const email=doc.data()?.email;await db.collection('business_accounts').doc(id).update({status:'approved'});if(email){const regSnap=await db.collection('business_registrations').where('email','==',email).get();regSnap.docs.forEach(async d=>{await d.ref.update({status:'approved',approvedAt:firebase.firestore.FieldValue.serverTimestamp()});});}loadUsers();loadAdminData();}
 async function deleteUser(id){if(!confirm('ลบผู้ประกอบการนี้?'))return;await db.collection('business_accounts').doc(id).delete();loadUsers();}
 
-async function loadPlaces(filter){
-  const el=document.getElementById('placesList');el.innerHTML='<div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div>';
+// ── Memory cache ──
+let _placesCache=null, _cacheTime=0;
+async function loadPlaces(filter,force=false){
+  const now=Date.now();
+  const el=document.getElementById('placesList');el.innerHTML='<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
   allPlacesCache=[];let lastDoc=null;
   while(true){let q=db.collection('places');if(filter!=='all')q=q.where('category','==',filter);q=q.orderBy('__name__').limit(1000);if(lastDoc)q=q.startAfter(lastDoc);const snap=await q.get();if(snap.empty)break;allPlacesCache.push(...snap.docs.map(d=>({id:d.id,...d.data()})));lastDoc=snap.docs[snap.docs.length-1];if(snap.docs.length<1000)break;}
   if(filter==='all'){
@@ -1292,7 +1297,7 @@ function renderPlaces(places){
 async function deletePlace(id){if(!confirm('ลบสถานที่นี้ออกจากแอปด้วย?'))return;await db.collection('places').doc(id).delete();loadPlaces('all');}
 
 async function loadAdminBookings(){
-  const el=document.getElementById('adminBookingList');el.innerHTML='<div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div>';
+  const el=document.getElementById('adminBookingList');el.innerHTML='<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
   const snap=await db.collection('bookings').orderBy('bookedAt','desc').limit(100).get();
   if(snap.empty){el.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><p>ยังไม่มีการจอง</p></div>';return;}
   el.innerHTML='<div class="card"><table><thead><tr><th>Ref</th><th>โรงแรม</th><th>ผู้จอง</th><th>Check-in</th><th>ราคา</th><th>สถานะ</th></tr></thead><tbody id="adminBookTbody"></tbody></table></div>';
@@ -1312,7 +1317,7 @@ async function loadRevenue(){
 
 async function loadRooms(){
   const el=document.getElementById('roomList');if(!currentBizId){el.innerHTML='<div class="empty-state"><div class="empty-icon">🛏</div><p>ยังไม่มีข้อมูลโรงแรม</p></div>';return;}
-  el.innerHTML='<div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div>';
+  el.innerHTML='<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
   const snap=await db.collection('places').where('category','==','hotel_room').where('hotel_id','==',currentBizId).get();
   if(snap.empty){el.innerHTML='<div class="empty-state"><div class="empty-icon">🛏</div><p>ยังไม่มีห้องพัก</p></div>';return;}
   el.innerHTML='<div class="card"><table><thead><tr><th>ชื่อห้อง</th><th>Weekday</th><th>Weekend</th><th>รับได้</th><th></th></tr></thead><tbody id="roomTbody"></tbody></table></div>';
@@ -1325,7 +1330,7 @@ async function deleteRoom(id){if(!confirm('ลบห้องนี้?'))return
 
 async function loadBizBookings(){
   const el=document.getElementById('bizBookingList');if(!currentBizId){el.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><p>ยังไม่มีการจอง</p></div>';return;}
-  el.innerHTML='<div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div>';
+  el.innerHTML='<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
   const snap=await db.collection('bookings').where('hotelId','==',currentBizId).orderBy('bookedAt','desc').limit(50).get();
   if(snap.empty){el.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><p>ยังไม่มีการจอง</p></div>';return;}
   el.innerHTML='<div class="card"><table><thead><tr><th>Ref</th><th>ผู้จอง</th><th>Check-in</th><th>Check-out</th><th>ราคา</th><th>สถานะ</th></tr></thead><tbody id="bizBookTbody"></tbody></table></div>';
@@ -1333,7 +1338,7 @@ async function loadBizBookings(){
 }
 
 async function loadBizStatus(){
-  const el=document.getElementById('statusList');el.innerHTML='<div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div>';
+  const el=document.getElementById('statusList');el.innerHTML='<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
   const snap=await db.collection('pending_updates').where('hotelEmail','==',currentUser.email).orderBy('submittedAt','desc').limit(20).get();
   if(snap.empty){el.innerHTML='<div class="empty-state"><div class="empty-icon">📊</div><p>ยังไม่เคยส่งข้อมูล</p></div>';return;}
   el.innerHTML='<div class="card"><table><thead><tr><th>วันที่ส่ง</th><th>ชื่อสถานที่</th><th>สถานะ</th><th>หมายเหตุ</th></tr></thead><tbody id="statusTbody"></tbody></table></div>';
@@ -1354,7 +1359,7 @@ async function changePassword(){
 }
 
 async function loadAdminTeam(){
-  const el=document.getElementById('adminTeamList');el.innerHTML='<div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div>';
+  const el=document.getElementById('adminTeamList');el.innerHTML='<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
   try{
     const snap=await db.collection('admins').orderBy('createdAt','desc').get();
     if(snap.empty){el.innerHTML='<div class="empty-state"><div class="empty-icon">🛡️</div><p>ยังไม่มี Admin อื่น</p></div>';return;}
