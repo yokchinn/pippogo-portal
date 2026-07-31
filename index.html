@@ -231,6 +231,7 @@ tr:hover td{background:var(--gray-50);}
         <button class="nav-item" onclick="goPage('adminContacts')"><span>📒</span> ข้อมูลผู้ประกอบการ</button>
         <button class="nav-item" onclick="goPage('adminBookings')"><span>📋</span> Bookings</button>
         <button class="nav-item superadmin-only" onclick="goPage('adminRevenue')"><span>💰</span> Revenue</button>
+        <button class="nav-item superadmin-only" onclick="goPage('adminPartners')"><span>🏪</span> จัดการ Partner</button>
         <button class="nav-item superadmin-only" onclick="goPage('adminTeam')"><span>🛡️</span> จัดการ Admin</button>
       </div>
       <div id="bizNav" style="display:none">
@@ -379,7 +380,14 @@ tr:hover td{background:var(--gray-50);}
         </div>
         <div class="card"><div class="card-title">💰 รายได้แยกตามโรงแรม</div><div id="revenueByHotel"><div class="loading">กำลังโหลด...</div></div></div>
       </div>
-      <div class="page" id="page-adminTeam">
+      <div class="page" id="page-adminPartners">
+  <div class="flex-between">
+    <div><div class="page-title">🏪 จัดการ Partner</div><div class="page-sub">ผู้ประกอบการทั้งหมด — เฉพาะ Super Admin</div></div>
+  </div>
+  <div id="partnersList"><div class="skeleton"></div><div class="skeleton"></div></div>
+</div>
+
+<div class="page" id="page-adminTeam">
         <div class="flex-between">
           <div><div class="page-title">จัดการ Admin</div><div class="page-sub">เพิ่ม/ลบสมาชิกทีม Admin</div></div>
           <button class="btn btn-primary btn-sm" onclick="openInviteAdminModal()">+ เชิญ Admin ใหม่</button>
@@ -639,6 +647,18 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 const ADMIN_EMAILS = ['admin@pippogo.com','seth@pippogo.com','yok-chinn@hotmail.com'];
+const SUPERADMIN_EMAIL = 'yok-chinn@hotmail.com';
+let currentUserRole = 'admin'; // จะถูก set จาก Firestore
+
+function isSuperAdmin() { return currentUser?.email === SUPERADMIN_EMAIL || currentUserRole === 'superadmin'; }
+function hasPermission(perm) {
+  if (isSuperAdmin()) return true;
+  const rolePerms = {
+    admin: ['approve','places','contacts','bookings','email'],
+    viewer: ['places','contacts']
+  };
+  return (rolePerms[currentUserRole]||[]).includes(perm);
+}
 const BREVO_API_KEY = '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';
 const BREVO_SENDER = { name: 'PippoGO', email: 'yokchinn@gmail.com' };
 let currentUser=null,currentRole=null,currentBizType=null,currentBizId=null,currentReviewId=null,currentReviewData=null;
@@ -822,10 +842,11 @@ auth.onAuthStateChanged(async(user)=>{
     if(ADMIN_EMAILS.includes(user.email))adminRole='superadmin';
     else if(!adminSnap.empty)adminRole=adminSnap.docs[0].data().role||'admin';
     currentRole=adminRole;
+    currentUserRole=adminRole; // sync กับ role system ใหม่
     document.getElementById('adminBadge').style.display='inline';
     document.getElementById('adminBadge').textContent=adminRole==='superadmin'?'👑 SUPER ADMIN':'🛡️ ADMIN';
     document.getElementById('portalLabel').textContent='Admin Dashboard';
-    document.getElementById('adminNav').style.display='block';document.getElementById('bizNav').style.display='none';
+    document.getElementById('adminNav').style.display='block';setTimeout(applyRoleUI,100);document.getElementById('bizNav').style.display='none';
     const isSuperAdmin=adminRole==='superadmin';
     document.querySelectorAll('.superadmin-only').forEach(el=>{el.style.display=isSuperAdmin?'flex':'none';});
     goPage('adminOverview');loadAdminData();
@@ -844,7 +865,33 @@ auth.onAuthStateChanged(async(user)=>{
   }
 });
 
+function applyRoleUI() {
+  const sa = isSuperAdmin();
+  // Super admin only items
+  document.querySelectorAll('.superadmin-only').forEach(el => {
+    el.style.display = sa ? '' : 'none';
+  });
+  // ซ่อนปุ่มที่ไม่มีสิทธิ์
+  document.querySelectorAll('[data-perm]').forEach(el => {
+    const perm = el.dataset.perm;
+    el.style.display = hasPermission(perm) ? '' : 'none';
+  });
+  // แสดง badge role
+  const badge = document.getElementById('adminRoleBadge');
+  if (badge) {
+    badge.textContent = sa ? '⭐ Super Admin' : currentUserRole === 'viewer' ? '👁️ Viewer' : '🛡️ Admin';
+    badge.style.background = sa ? 'var(--yellow)' : 'rgba(255,255,255,.2)';
+    badge.style.color = sa ? 'var(--gray-700)' : 'white';
+  }
+}
+
 function goPage(pageId){
+  // ตรวจสิทธิ์ superadmin-only pages
+  const saPages = ['adminTeam','adminPartners'];
+  if (saPages.includes(pageId) && !isSuperAdmin()) {
+    alert('⛔ เฉพาะ Super Admin เท่านั้น');
+    return;
+  }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+pageId).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>{n.classList.toggle('active',n.getAttribute('onclick')?.includes(pageId));});
@@ -855,6 +902,7 @@ function goPage(pageId){
   if(pageId==='adminContacts')loadContacts();
   if(pageId==='adminRevenue')loadRevenue();
   if(pageId==='adminTeam')loadAdminTeam();
+  if(pageId==='adminPartners')loadPartners();
   if(pageId==='bizRooms')loadRooms();
   if(pageId==='bizBookings')loadBizBookings();
   if(pageId==='bizStatus')loadBizStatus();
@@ -1358,15 +1406,77 @@ async function changePassword(){
   btn.disabled=false;btn.textContent='เปลี่ยนรหัสผ่าน';
 }
 
+async function loadPartners(){
+  const el=document.getElementById('partnersList');
+  el.innerHTML='<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
+  const snap=await db.collection('business_accounts').orderBy('createdAt','desc').get();
+  if(snap.empty){el.innerHTML='<div class="empty-state"><div class="empty-icon">🏪</div><p>ยังไม่มีผู้ประกอบการ</p></div>';return;}
+  const CAT={hotel:'🏨 โรงแรม',cafe:'🍽️ ร้านอาหาร',mall:'🏬 ห้าง',attraction:'🌳 ท่องเที่ยว',vet:'🏥 รพ.สัตว์',petshop:'🛍️ Pet Shop',boarding:'🏡 รับฝาก'};
+  el.innerHTML=`<div class="card"><table><thead><tr>
+    <th>ร้าน/โรงแรม</th><th>ประเภท</th><th>อีเมล</th><th>สถานะ</th><th>Place ID</th><th>จัดการ</th>
+  </tr></thead><tbody>${snap.docs.map(doc=>{
+    const d=doc.data();
+    const uid=doc.id;
+    const status=d.status||'pending';
+    return `<tr>
+      <td><strong>${d.bizName||'-'}</strong><br><span style="font-size:11px;color:var(--gray-500)">${d.phone||''}</span></td>
+      <td>${CAT[d.category]||d.category||'-'}</td>
+      <td style="font-size:12px">${d.email||'-'}</td>
+      <td><span class="badge badge-${status==='active'?'approved':status==='suspended'?'rejected':'pending'}">${status==='active'?'✅ Active':status==='suspended'?'🚫 Suspend':'⏳ Pending'}</span></td>
+      <td><input type="text" value="${d.placeId||''}" id="pid-${uid}" style="width:140px;padding:4px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:12px" placeholder="Place ID"></td>
+      <td>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn-icon btn-approve" onclick="setPartnerStatus('${uid}','active')">✅</button>
+          <button class="btn-icon btn-reject" onclick="setPartnerStatus('${uid}','suspended')">🚫</button>
+          <button class="btn-icon btn-view" onclick="linkPartnerPlace('${uid}')">🔗 Link</button>
+          <a href="partner?uid=${uid}" target="_blank" class="btn-icon btn-view" style="text-decoration:none">👁️</a>
+        </div>
+      </td>
+    </tr>`;
+  }).join('')}</tbody></table></div>`;
+}
+
+async function setPartnerStatus(uid, status){
+  await db.collection('business_accounts').doc(uid).update({status, updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  loadPartners();
+}
+
+async function linkPartnerPlace(uid){
+  const placeId=document.getElementById('pid-'+uid)?.value?.trim();
+  if(!placeId){alert('กรุณากรอก Place ID ก่อน');return;}
+  await db.collection('business_accounts').doc(uid).update({placeId, updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  alert('✅ ผูก Place สำเร็จ!');
+}
+
 async function loadAdminTeam(){
+  if(!isSuperAdmin()){document.getElementById('adminTeamList').innerHTML='<div class="empty-state"><div class="empty-icon">⛔</div><p>เฉพาะ Super Admin เท่านั้น</p></div>';return;}
   const el=document.getElementById('adminTeamList');el.innerHTML='<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
   try{
     const snap=await db.collection('admins').orderBy('createdAt','desc').get();
     if(snap.empty){el.innerHTML='<div class="empty-state"><div class="empty-icon">🛡️</div><p>ยังไม่มี Admin อื่น</p></div>';return;}
-    el.innerHTML='<div class="card"><table><thead><tr><th>ชื่อ</th><th>อีเมล</th><th>Role</th><th>เพิ่มโดย</th><th>วันที่เพิ่ม</th><th></th></tr></thead><tbody id="adminTeamTbody"></tbody></table></div>';
+    el.innerHTML='<div class="card"><table><thead><tr><th>ชื่อ</th><th>อีเมล</th><th>Role</th><th>เพิ่มโดย</th><th>วันที่เพิ่ม</th><th>จัดการ</th></tr></thead><tbody id="adminTeamTbody"></tbody></table></div>';
     const tbody=document.getElementById('adminTeamTbody');
-    snap.docs.forEach(doc=>{const d=doc.data();const dt=d.createdAt?.toDate?d.createdAt.toDate().toLocaleDateString('th-TH'):'-';const isSelf=d.email===currentUser.email;tbody.innerHTML+=`<tr><td><strong>${d.name||'-'}</strong></td><td>${d.email}</td><td>${d.role||'admin'}</td><td>${d.addedBy||'-'}</td><td>${dt}</td><td>${isSelf?'<span style="font-size:11px;color:var(--gray-500)">คุณเอง</span>':`<button class="btn-icon btn-reject" onclick="removeAdmin('${doc.id}','${d.email}')">ลบ</button>`}</td></tr>`;});
+    snap.docs.forEach(doc=>{
+      const d=doc.data();
+      const dt=d.createdAt?.toDate?d.createdAt.toDate().toLocaleDateString('th-TH'):'-';
+      const isSelf=d.email===currentUser.email;
+      const roleOpts=['superadmin','admin','viewer'].map(r=>`<option value="${r}" ${(d.role||'admin')===r?'selected':''}>${r==='superadmin'?'⭐ Super Admin':r==='viewer'?'👁️ Viewer':'🛡️ Admin'}</option>`).join('');
+      tbody.innerHTML+=`<tr>
+        <td><strong>${d.name||'-'}</strong></td>
+        <td style="font-size:12px">${d.email}</td>
+        <td>${isSelf?`<span class="badge badge-approved">${d.role||'admin'}</span>`:`<select onchange="updateAdminRole('${doc.id}',this.value)" style="padding:4px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:12px;font-family:var(--font)">${roleOpts}</select>`}</td>
+        <td style="font-size:12px">${d.addedBy||'-'}</td>
+        <td style="font-size:12px">${dt}</td>
+        <td>${isSelf?'<span style="font-size:11px;color:var(--gray-500)">คุณเอง</span>':`<button class="btn-icon btn-reject" onclick="removeAdmin('${doc.id}','${d.email}')">ลบ</button>`}</td>
+      </tr>`;
+    });
   }catch(e){el.innerHTML='<div class="empty-state"><p>เกิดข้อผิดพลาด: '+e.message+'</p></div>';}
+}
+
+async function updateAdminRole(docId, newRole){
+  if(!isSuperAdmin()){alert('⛔ เฉพาะ Super Admin เท่านั้น');return;}
+  await db.collection('admins').doc(docId).update({role:newRole,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  alert(`✅ เปลี่ยน Role เป็น ${newRole} แล้ว`);
 }
 function openInviteAdminModal(){document.getElementById('inviteAdminName').value='';document.getElementById('inviteAdminEmail').value='';document.getElementById('inviteAdminPass').value='';document.getElementById('inviteAdminMsg').innerHTML='';openModal('inviteAdminModal');}
 async function inviteAdmin(){
