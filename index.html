@@ -151,6 +151,10 @@ tr:hover td{background:var(--gray-50);}
       <div class="field"><label>รหัสผ่าน</label><input type="password" id="loginPassword" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')handleLogin()"></div>
       <button class="btn btn-primary" id="loginBtn" onclick="handleLogin()">เข้าสู่ระบบ</button>
       <p style="text-align:center;font-size:12px;color:var(--gray-500);margin-top:14px">ลืมรหัสผ่าน? ติดต่อ support@pippogo.com</p>
+        <div style="text-align:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--gray-200)">
+          <span style="font-size:12px;color:var(--gray-500)">ผู้ประกอบการ? </span>
+          <a href="partner" style="font-size:12px;color:var(--blue);font-weight:600;text-decoration:none">เข้าสู่ Partner Portal →</a>
+        </div>
     </div>
     <div id="registerForm" style="display:none">
       <div class="step-indicator">
@@ -1527,6 +1531,69 @@ function applyHoursPreset(preset){
   else if(preset==='weekday'){weekdays.forEach(function(k){setDay(k,true);});weekend.forEach(function(k){setDay(k,false);});}
   else if(preset==='weekend'){weekend.forEach(function(k){setDay(k,true);});weekdays.forEach(function(k){setDay(k,false);});}
   else if(preset==='except_mon'){days.forEach(function(k){setDay(k,true);});setDay('mon',false);}
+}
+
+// ─── Pending Approvals ───
+async function loadPending() {
+  const el = document.getElementById('pendingList');
+  const snap = await db.collection('pending_updates').where('status','==','pending').orderBy('submittedAt','desc').get();
+  // update badge
+  const countEl = document.getElementById('pendingCount');
+  if (snap.size > 0) { countEl.style.display='inline'; countEl.textContent=snap.size; }
+  else { countEl.style.display='none'; }
+
+  if (snap.empty) { el.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><p>ไม่มีรายการรออนุมัติ</p></div>'; return; }
+
+  el.innerHTML = snap.docs.map(doc => {
+    const d = doc.data();
+    const date = d.submittedAt?.toDate()?.toLocaleDateString('th-TH')||'-';
+    const changes = Object.entries(d.changes||{}).filter(([k,v])=>v).slice(0,5)
+      .map(([k,v])=>`<div style="font-size:11px;color:var(--gray-500)">${k}: <strong>${v}</strong></div>`).join('');
+    return `<div class="card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div>
+          <div style="font-size:15px;font-weight:700">${d.bizName||'-'}</div>
+          <div style="font-size:12px;color:var(--gray-500)">${d.email||''} · ${date}</div>
+          <a href="partner.html?uid=${d.submittedBy}" target="_blank" style="font-size:11px;color:var(--blue);text-decoration:none">🔗 ดู Partner Dashboard</a>
+        </div>
+        <span class="badge badge-pending">รอตรวจสอบ</span>
+      </div>
+      <div style="background:var(--gray-100);border-radius:8px;padding:10px;margin-bottom:10px">${changes}</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-icon btn-approve" onclick="approvePending('${doc.id}','${d.placeId||''}',${JSON.stringify(JSON.stringify(d.changes||{}))})">✅ Approve</button>
+        <button class="btn-icon btn-reject" onclick="rejectPending('${doc.id}')">❌ Reject</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function approvePending(docId, placeId, changesStr) {
+  const changes = JSON.parse(changesStr);
+  try {
+    if (placeId) {
+      await db.collection('places').doc(placeId).update({ ...changes, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() });
+    }
+    await db.collection('pending_updates').doc(docId).update({
+      status: 'approved',
+      reviewedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      reviewedBy: currentUser.email
+    });
+    alert('✅ Approve สำเร็จ! ข้อมูลขึ้นแอปแล้ว');
+    loadPending();
+  } catch(e) { alert('เกิดข้อผิดพลาด: '+e.message); }
+}
+
+async function rejectPending(docId) {
+  const reason = prompt('เหตุผลที่ไม่อนุมัติ (ถ้ามี):');
+  if (reason === null) return;
+  await db.collection('pending_updates').doc(docId).update({
+    status: 'rejected',
+    rejectReason: reason,
+    reviewedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    reviewedBy: currentUser.email
+  });
+  alert('❌ Reject แล้ว ผู้ประกอบการจะได้รับแจ้ง');
+  loadPending();
 }
 
 // ─── Province Autocomplete (universal) ───
