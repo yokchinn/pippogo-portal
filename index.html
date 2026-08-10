@@ -136,6 +136,8 @@ tr:hover td{background:var(--gray-50);}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+<!-- ✅ SheetJS สำหรับ Export Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 <!-- AUTH -->
@@ -175,6 +177,7 @@ tr:hover td{background:var(--gray-50);}
           <div class="biz-card" onclick="selectBizType('attraction')" id="biz-attraction"><div class="icon">🌳</div><div class="label">สถานที่ท่องเที่ยว</div></div>
           <div class="biz-card" onclick="selectBizType('vet')" id="biz-vet"><div class="icon">🏥</div><div class="label">โรงพยาบาลสัตว์</div></div>
           <div class="biz-card" onclick="selectBizType('petshop')" id="biz-petshop"><div class="icon">🛍️</div><div class="label">Pet Shop</div></div>
+          <div class="biz-card" onclick="selectBizType('grooming')" id="biz-grooming"><div class="icon">✂️</div><div class="label">Grooming</div></div>
           <div class="biz-card" onclick="selectBizType('boarding')" id="biz-boarding"><div class="icon">🏡</div><div class="label">รับฝากสัตว์เลี้ยง</div></div>
         </div>
         <div id="regStep1Error" class="error-msg" style="display:none">กรุณาเลือกประเภทธุรกิจ</div>
@@ -266,6 +269,7 @@ tr:hover td{background:var(--gray-50);}
                 <button class="map-filter-btn" onclick="setMapFilter(this,'mall')">🏬 ห้าง</button>
                 <button class="map-filter-btn" onclick="setMapFilter(this,'vet')">🏥 รพ.สัตว์</button>
                 <button class="map-filter-btn" onclick="setMapFilter(this,'petshop')">🛍️ Pet Shop</button>
+                <button class="map-filter-btn" onclick="setMapFilter(this,'grooming')">✂️ Grooming</button>
               </div>
               <div style="display:flex;gap:8px;align-items:center">
                 <label style="font-size:12px;color:var(--gray-500)">โหมด:</label>
@@ -297,7 +301,10 @@ tr:hover td{background:var(--gray-50);}
       <div class="page" id="page-adminPlaces">
         <div class="flex-between">
           <div><div class="page-title">สถานที่ทั้งหมด <span id="placesTotalCount" style="font-size:16px;font-weight:400;color:var(--gray-500)"></span></div><div class="page-sub">สถานที่ทุกประเภทใน PippoGO</div></div>
-          <button class="btn btn-primary btn-sm" onclick="openAddPlaceModal()">+ เพิ่มสถานที่</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm" style="background:var(--green-light);color:var(--green)" onclick="openExportModal()">📊 Export Excel</button>
+            <button class="btn btn-primary btn-sm" onclick="openAddPlaceModal()">+ เพิ่มสถานที่</button>
+          </div>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:12px">
           <div style="flex:1;position:relative">
@@ -321,6 +328,7 @@ tr:hover td{background:var(--gray-50);}
           <button class="btn-icon" style="background:var(--green-light);color:var(--green)" onclick="filterPlaces('attraction')" id="filter-attraction">🌳 ท่องเที่ยว</button>
           <button class="btn-icon" style="background:var(--red-light);color:var(--red)" onclick="filterPlaces('vet')" id="filter-vet">🏥 รพ.สัตว์</button>
           <button class="btn-icon" style="background:var(--blue-light);color:#0C447C" onclick="filterPlaces('petshop')" id="filter-petshop">🛍️ Pet Shop</button>
+          <button class="btn-icon" style="background:#fce4ec;color:#C2185B" onclick="filterPlaces('grooming')" id="filter-grooming">✂️ Grooming</button>
           <button class="btn-icon" style="background:#efebe9;color:#5C4033" onclick="filterPlaces('boarding')" id="filter-boarding">🏡 รับฝาก</button>
         </div>
         <div id="placesList"><div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div></div>
@@ -347,6 +355,7 @@ tr:hover td{background:var(--gray-50);}
             <option value="mall">🏬 ห้าง</option>
             <option value="vet">🏥 รพ.สัตว์</option>
             <option value="petshop">🛍️ Pet Shop</option>
+            <option value="grooming">✂️ Grooming</option>
             <option value="other">อื่นๆ</option>
           </select>
           <select id="contactProvinceFilter" onchange="filterContacts()"
@@ -494,6 +503,7 @@ tr:hover td{background:var(--gray-50);}
           <option value="hotel">🏨 โรงแรม</option><option value="cafe">🍽️ ร้านอาหาร/คาเฟ่</option>
           <option value="mall">🏬 ห้างสรรพสินค้า</option><option value="attraction">🌳 สถานที่ท่องเที่ยว</option>
           <option value="vet">🏥 โรงพยาบาลสัตว์</option><option value="petshop">🛍️ Pet Shop</option>
+          <option value="grooming">✂️ Grooming</option>
           <option value="boarding">🏡 รับฝากสัตว์เลี้ยง</option>
         </select>
       </div>
@@ -539,12 +549,28 @@ tr:hover td{background:var(--gray-50);}
           <option value="">-- เลือกประเภท --</option>
           <option value="cafe">🍽️ ร้านอาหาร/คาเฟ่</option><option value="mall">🏬 ห้างสรรพสินค้า</option>
           <option value="attraction">🌳 สถานที่ท่องเที่ยว</option><option value="vet">🏥 โรงพยาบาลสัตว์</option>
-          <option value="petshop">🛍️ Pet Shop</option>
+          <option value="petshop">🛍️ Pet Shop</option><option value="grooming">✂️ Grooming</option>
         </select>
       </div>
       <div id="addPlaceFormBody"></div>
     </div>
     <div class="modal-footer"><button class="btn btn-primary btn-sm" onclick="saveNewPlace()">✓ เพิ่มสถานที่ & ขึ้นแอปทันที</button></div>
+  </div>
+</div>
+
+<!-- ✅ Modal: Export Excel — เลือกคอลัมน์ได้ -->
+<div class="modal-overlay" id="exportModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header"><h3>📊 Export เป็น Excel</h3><button class="modal-close" onclick="closeModal('exportModal')">✕</button></div>
+    <div class="modal-body">
+      <div id="exportCountInfo" style="font-size:12px;color:var(--gray-500);background:var(--gray-100);padding:8px 12px;border-radius:var(--radius-sm);margin-bottom:14px"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <strong style="font-size:13px">เลือกคอลัมน์ที่จะ export</strong>
+        <label style="font-size:12px;cursor:pointer"><input type="checkbox" id="exportSelectAll" checked onchange="toggleAllExportCols(this)"> เลือกทั้งหมด</label>
+      </div>
+      <div id="exportColList" class="check-group"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-primary btn-sm" onclick="doExportExcel()">⬇️ ดาวน์โหลด .xlsx</button></div>
   </div>
 </div>
 
@@ -564,7 +590,7 @@ tr:hover td{background:var(--gray-50);}
             <option value="">-- เลือกประเภท --</option>
             <option value="hotel">🏨 โรงแรม</option><option value="cafe">🍽️ ร้านอาหาร/คาเฟ่</option>
             <option value="mall">🏬 ห้าง</option><option value="vet">🏥 รพ.สัตว์</option>
-            <option value="petshop">🛍️ Pet Shop</option><option value="other">อื่นๆ</option>
+            <option value="petshop">🛍️ Pet Shop</option><option value="grooming">✂️ Grooming</option><option value="other">อื่นๆ</option>
           </select>
         </div>
         <div class="field"><label>ชื่อร้าน / สถานที่ *</label><input type="text" id="cBizName" placeholder="ชื่อสถานที่"></div>
@@ -579,7 +605,6 @@ tr:hover td{background:var(--gray-50);}
       </div>
       <div class="field-row">
         <div class="field"><label>LINE ID</label><input type="text" id="cLine" placeholder="@lineId"></div>
-        <!-- จังหวัด — แก้ไขให้ autocomplete ทำงาน -->
         <div class="field"><label>จังหวัด</label>
           <div style="position:relative">
             <input type="text" id="cProvince" placeholder="พิมพ์ค้นหาจังหวัด..."
@@ -670,6 +695,7 @@ const BIZ_TYPES = {
   attraction:{label:'🌳 สถานที่ท่องเที่ยว',cat:'attraction',hasRooms:false},
   vet:{label:'🏥 โรงพยาบาลสัตว์',cat:'vet',hasRooms:false},
   petshop:{label:'🛍️ Pet Shop',cat:'petshop',hasRooms:false},
+  grooming:{label:'✂️ Grooming',cat:'grooming',hasRooms:false},
   boarding:{label:'🏡 รับฝากสัตว์เลี้ยง',cat:'boarding',hasRooms:false}
 };
 
@@ -770,6 +796,15 @@ function getBizForm(type,d){
       <div class="check-group"><label class="check-item"><input type="checkbox" id="psFood" ${(Array.isArray(d.products)?d.products.join(','):d.products||'').includes('food')?'checked':''}> 🍖 อาหารสัตว์</label><label class="check-item"><input type="checkbox" id="psAccessory" ${(Array.isArray(d.products)?d.products.join(','):d.products||'').includes('accessory')?'checked':''}> 🎀 อุปกรณ์</label><label class="check-item"><input type="checkbox" id="psToy" ${(Array.isArray(d.products)?d.products.join(','):d.products||'').includes('toy')?'checked':''}> 🎾 ของเล่น</label><label class="check-item"><input type="checkbox" id="psGrooming" ${(Array.isArray(d.products)?d.products.join(','):d.products||'').includes('grooming')?'checked':''}> ✂️ อาบน้ำ</label><label class="check-item"><input type="checkbox" id="psMedicine" ${(Array.isArray(d.products)?d.products.join(','):d.products||'').includes('medicine')?'checked':''}> 💊 ยา</label><label class="check-item"><input type="checkbox" id="psLive" ${(Array.isArray(d.products)?d.products.join(','):d.products||'').includes('live')?'checked':''}> 🐹 สัตว์มีชีวิต</label></div>
       <div class="field" style="margin-top:12px"><label>คำอธิบาย</label><textarea id="bDesc" placeholder="สินค้าคุณภาพ...">${d.description||''}</textarea></div>
     </div>`,
+    grooming:`<div class="form-section"><div class="form-section-title">✂️ บริการ Grooming</div>
+      <div class="check-group"><label class="check-item"><input type="checkbox" id="grBath" ${(Array.isArray(d.services)?d.services.join(','):d.services||'').includes('bath')?'checked':''}> 🚿 อาบน้ำ</label><label class="check-item"><input type="checkbox" id="grCut" ${(Array.isArray(d.services)?d.services.join(','):d.services||'').includes('cut')?'checked':''}> ✂️ ตัดขน</label><label class="check-item"><input type="checkbox" id="grSpa" ${(Array.isArray(d.services)?d.services.join(','):d.services||'').includes('spa')?'checked':''}> 🛁 สปา</label><label class="check-item"><input type="checkbox" id="grNail" ${(Array.isArray(d.services)?d.services.join(','):d.services||'').includes('nail')?'checked':''}> 💅 ตัดเล็บ</label><label class="check-item"><input type="checkbox" id="grTeeth" ${(Array.isArray(d.services)?d.services.join(','):d.services||'').includes('teeth')?'checked':''}> 🦷 ขูดหินปูน</label><label class="check-item"><input type="checkbox" id="grMobile" ${(Array.isArray(d.services)?d.services.join(','):d.services||'').includes('mobile')?'checked':''}> 🚗 บริการถึงบ้าน</label></div>
+      <div class="field" style="margin-top:12px"><label>รับสัตว์ประเภท</label><input type="text" id="bPetTypes" value="${d.petTypes||''}" placeholder="สุนัข แมว"></div>
+      <div class="field-row">
+        <div class="field"><label>ราคาเริ่มต้น (฿)</label><input type="number" id="bPriceMin" value="${d.priceMin||0}" min="0"></div>
+        <div class="field"><label>ราคาสูงสุด (฿)</label><input type="number" id="bPriceMax" value="${d.priceMax||0}" min="0"></div>
+      </div>
+      <div class="field"><label>คำอธิบาย</label><textarea id="bDesc" placeholder="ช่างผู้เชี่ยวชาญ...">${d.description||''}</textarea></div>
+    </div>`,
     boarding:`<div class="form-section"><div class="form-section-title">🏡 บริการรับฝาก</div>
       <div class="field"><label>รับสัตว์ประเภท</label><input type="text" id="bPetTypes" value="${d.petTypes||''}" placeholder="สุนัข แมว"></div>
       <div class="field-row">
@@ -796,6 +831,7 @@ function collectBizFormData(type){
     attraction:()=>({subType:g('bSubType'),petPolicy:g('bPetPolicy'),entryFee:g('bEntryFee'),description:g('bDesc')}),
     vet:()=>({description:g('bDesc'),petTypes:g('bPetTypes'),services:gc(['v24h','vEmergency','vSurgery','vXray','vGrooming','vBoarding']).join(',')}),
     petshop:()=>({description:g('bDesc'),products:gc(['psFood','psAccessory','psToy','psGrooming','psMedicine','psLive']).join(',')}),
+    grooming:()=>({description:g('bDesc'),petTypes:g('bPetTypes'),priceMin:g('bPriceMin'),priceMax:g('bPriceMax'),services:gc(['grBath','grCut','grSpa','grNail','grTeeth','grMobile']).join(',')}),
     boarding:()=>({petTypes:g('bPetTypes'),priceMin:g('bPriceMin'),priceMax:g('bPriceMax'),highlight:g('bHighlight'),description:g('bDesc'),facilities:gc(['bdCCTV','bdVet','bdUpdate','bdPlay','bdAC','bdPickup']).join(',')})
   };
   return{...base,...(extras[type]?extras[type]():{})};
@@ -867,16 +903,11 @@ auth.onAuthStateChanged(async(user)=>{
 
 function applyRoleUI() {
   const sa = isSuperAdmin();
-  // Super admin only items
-  document.querySelectorAll('.superadmin-only').forEach(el => {
-    el.style.display = sa ? '' : 'none';
-  });
-  // ซ่อนปุ่มที่ไม่มีสิทธิ์
+  document.querySelectorAll('.superadmin-only').forEach(el => { el.style.display = sa ? '' : 'none'; });
   document.querySelectorAll('[data-perm]').forEach(el => {
     const perm = el.dataset.perm;
     el.style.display = hasPermission(perm) ? '' : 'none';
   });
-  // แสดง badge role
   const badge = document.getElementById('adminRoleBadge');
   if (badge) {
     badge.textContent = sa ? '⭐ Super Admin' : currentUserRole === 'viewer' ? '👁️ Viewer' : '🛡️ Admin';
@@ -886,7 +917,6 @@ function applyRoleUI() {
 }
 
 function goPage(pageId){
-  // ตรวจสิทธิ์ superadmin-only pages
   const saPages = ['adminTeam','adminPartners'];
   if (saPages.includes(pageId) && !isSuperAdmin()) {
     alert('⛔ เฉพาะ Super Admin เท่านั้น');
@@ -930,7 +960,6 @@ let emailPartnerTarget={};
 let isBulkMode=false;
 let bulkRecipients=[];
 
-// ── ส่งเดี่ยว: เปิด modal ──
 function sendEmailToPartner(email,bizName,contactName){
   if(!email){alert('ผู้ประกอบการรายนี้ไม่มีอีเมล์');return;}
   isBulkMode=false;bulkRecipients=[];
@@ -946,7 +975,6 @@ function sendEmailToPartner(email,bizName,contactName){
   openModal('emailPartnerModal');
 }
 
-// ── checkbox helpers ──
 function updateBulkSelect(){
   const cbs=document.querySelectorAll('.contact-cb:checked');
   const total=document.querySelectorAll('.contact-cb');
@@ -965,7 +993,6 @@ function toggleSelectAll(cb){
   updateBulkSelect();
 }
 
-// ── ส่งกลุ่ม: เปิด modal ──
 function openBulkEmailModal(){
   const cbs=document.querySelectorAll('.contact-cb:checked');
   if(cbs.length===0){alert('กรุณาเลือกผู้รับอย่างน้อย 1 ราย');return;}
@@ -985,7 +1012,6 @@ function openBulkEmailModal(){
   openModal('emailPartnerModal');
 }
 
-// ── apply template ──
 function applyTemplate(val){
   const templates={
     invite:{
@@ -996,28 +1022,7 @@ function applyTemplate(val){
 
 PippoGO ออกแบบมาเพื่อเชื่อมต่อเจ้าของสัตว์เลี้ยงกับสถานที่ที่ต้อนรับพวกเขาจริงๆ ครอบคลุมทุกหมวดหมู่ ได้แก่ โรงแรม · ร้านอาหาร/คาเฟ่ · ห้างสรรพสินค้า · สถานที่ท่องเที่ยว · โรงพยาบาลสัตว์ · Pet Shop · และรับฝากสัตว์เลี้ยง
 
-─────────────────────────────
-ทำไม {{ชื่อร้าน}} ถึงควรอยู่บน PippoGO?
-─────────────────────────────
-
-ฟีเจอร์เด่นสำหรับโรงแรม คือระบบจองห้องพักผ่านแอปโดยตรง ที่ลูกค้าสามารถระบุประเภทสัตว์เลี้ยง น้ำหนัก และจำนวน พร้อมทราบ Policy และราคาล่วงหน้าก่อนจอง ลดภาระ Admin ได้ทันที
-
-─────────────────────────────
-ข้อเสนอพิเศษสำหรับพาร์ทเนอร์ผู้ก่อตั้ง
-─────────────────────────────
-
-เนื่องจากอยู่ในช่วงก่อนเปิดตัว เราจึงเปิดรับพาร์ทเนอร์อย่างคัดสรรเพื่อร่วมเติบโตไปด้วยกัน
-
-🎁 6 เดือนแรก — ไม่มีค่า Commission ใดๆ ทั้งสิ้น
-หลังจากนั้น หากต่อสัญญา จะได้รับอัตราพิเศษระยะยาวสำหรับ Founding Partner โดยเฉพาะ
-
-สิทธิ์ที่จะได้รับ: ลงโปรไฟล์บนแอป · ระบบหลังบ้านจัดการการจอง · Dashboard ติดตามยอดจอง · ทีมงานดูแลตลอด
-
-─────────────────────────────
-
 หากทาง {{ชื่อร้าน}} สนใจ เพียงตอบกลับอีเมล์นี้ ทีมงานจะติดต่อกลับเพื่อนำเสนอรายละเอียดโปรแกรมทั้งหมด
-
-ดูรายละเอียดเบื้องต้นได้ที่: pippogo-portal-tuoi.vercel.app/pitch
 
 ขอบคุณที่สละเวลาอ่านครับ
 
@@ -1054,7 +1059,6 @@ PippoGO มีโปรโมชันพิเศษสำหรับพาร
   }
 }
 
-// ── core: ส่งผ่าน Brevo API ──
 async function sendViaBrevo(toEmail, toName, subject, htmlBody, attachmentUrl=''){
   const payload={
     sender: BREVO_SENDER,
@@ -1062,9 +1066,7 @@ async function sendViaBrevo(toEmail, toName, subject, htmlBody, attachmentUrl=''
     subject: subject,
     htmlContent: htmlBody.split('\n').join('<br>')
   };
-  if(attachmentUrl){
-    payload.attachment=[{url:attachmentUrl, name:'document.pdf'}];
-  }
+  if(attachmentUrl){ payload.attachment=[{url:attachmentUrl, name:'document.pdf'}]; }
   const res=await fetch('https://api.brevo.com/v3/smtp/email',{
     method:'POST',
     headers:{'Content-Type':'application/json','api-key':BREVO_API_KEY},
@@ -1074,7 +1076,6 @@ async function sendViaBrevo(toEmail, toName, subject, htmlBody, attachmentUrl=''
   return await res.json();
 }
 
-// ── กดส่ง ──
 async function doSendEmail(){
   const subject=document.getElementById('emailSubject').value.trim();
   const bodyRaw=document.getElementById('emailBody').value.trim();
@@ -1083,10 +1084,8 @@ async function doSendEmail(){
   const btn=document.getElementById('sendEmailBtn');
   if(!subject||!bodyRaw){msgEl.innerHTML='<div class="error-msg">กรุณากรอกหัวข้อและข้อความ</div>';return;}
   btn.disabled=true;btn.textContent='กำลังส่ง...';
-
   try{
     if(isBulkMode){
-      // ── bulk send ──
       let ok=0,fail=0;
       btn.textContent=`กำลังส่ง 0/${bulkRecipients.length}...`;
       for(let i=0;i<bulkRecipients.length;i++){
@@ -1095,7 +1094,6 @@ async function doSendEmail(){
         try{
           await sendViaBrevo(r.email,r.name||r.bizName,subject,body,attachUrl);
           ok++;
-          // อัปเดต status → contacted
           const snap=await db.collection('partner_contacts').where('bizName','==',r.bizName).limit(1).get();
           if(!snap.empty&&snap.docs[0].data().status==='prospect'){
             await snap.docs[0].ref.update({status:'contacted',updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
@@ -1105,14 +1103,11 @@ async function doSendEmail(){
         if(i<bulkRecipients.length-1)await new Promise(r=>setTimeout(r,300));
       }
       msgEl.innerHTML='<div class="success-msg">✅ ส่งสำเร็จ '+ok+' ราย'+(fail>0?' · ล้มเหลว '+fail+' ราย':'')+'</div>';
-      // บันทึก email log
       await db.collection('email_logs').add({type:'bulk',subject,recipients:bulkRecipients.length,sentOk:ok,sentFail:fail,sentBy:currentUser.email,sentAt:firebase.firestore.FieldValue.serverTimestamp()});
       setTimeout(()=>{closeModal('emailPartnerModal');loadContacts();},2000);
     }else{
-      // ── single send ──
       const body=bodyRaw.replace(/{{ชื่อ}}/g,emailPartnerTarget.contactName||emailPartnerTarget.bizName).replace(/{{ชื่อร้าน}}/g,emailPartnerTarget.bizName);
       await sendViaBrevo(emailPartnerTarget.email,emailPartnerTarget.contactName||emailPartnerTarget.bizName,subject,body,attachUrl);
-      // อัปเดต status
       const snap=await db.collection('partner_contacts').where('bizName','==',emailPartnerTarget.bizName).limit(1).get();
       if(!snap.empty&&snap.docs[0].data().status==='prospect'){
         await snap.docs[0].ref.update({status:'contacted',updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
@@ -1121,22 +1116,19 @@ async function doSendEmail(){
       msgEl.innerHTML='<div class="success-msg">✅ ส่งอีเมล์สำเร็จแล้ว!</div>';
       setTimeout(()=>{closeModal('emailPartnerModal');loadContacts();},1500);
     }
-  }catch(e){
-    msgEl.innerHTML=`<div class="error-msg">ส่งไม่สำเร็จ: ${e.message}</div>`;
-  }
+  }catch(e){ msgEl.innerHTML=`<div class="error-msg">ส่งไม่สำเร็จ: ${e.message}</div>`; }
   btn.disabled=false;btn.textContent='✉️ ส่ง';
 }
 
 // ─── Contacts ───
 let allContactsCache=[],editingContactId=null;
 const statusConfig={prospect:{label:'Prospect',color:'#BA7517',bg:'#fff8e6'},contacted:{label:'Contacted',color:'#2561E4',bg:'#EBF1FD'},interested:{label:'Interested',color:'#1a6b35',bg:'#e3f5e9'},onboarded:{label:'Onboarded',color:'#1a6b35',bg:'#e3f5e9'},declined:{label:'Declined',color:'#b00020',bg:'#fdecea'}};
-const bizTypeMap={hotel:'🏨 โรงแรม',cafe:'🍽️ ร้านอาหาร',mall:'🏬 ห้าง',vet:'🏥 รพ.สัตว์',petshop:'🛍️ Pet Shop',other:'อื่นๆ'};
+const bizTypeMap={hotel:'🏨 โรงแรม',cafe:'🍽️ ร้านอาหาร',mall:'🏬 ห้าง',vet:'🏥 รพ.สัตว์',petshop:'🛍️ Pet Shop',grooming:'✂️ Grooming',other:'อื่นๆ'};
 
 async function loadContacts(){
   const el=document.getElementById('contactList');el.innerHTML='<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
   const snap=await db.collection('partner_contacts').orderBy('createdAt','desc').limit(100).get();
   allContactsCache=snap.docs.map(d=>({id:d.id,...d.data()}));
-  // populate province filter
   const provinces=[...new Set(allContactsCache.map(c=>c.province).filter(Boolean))].sort();
   const sel=document.getElementById('contactProvinceFilter');
   if(sel){const cur=sel.value;sel.innerHTML='<option value="">📍 ทุกจังหวัด</option>'+provinces.map(p=>`<option value="${p}" ${p===cur?'selected':''}>${p}</option>`).join('');}
@@ -1213,7 +1205,6 @@ async function saveContact(){
   const msgEl=document.getElementById('addContactMsg');
   const bizName=document.getElementById('cBizName').value.trim();
   if(!bizName){msgEl.innerHTML='<div class="error-msg">กรุณากรอกชื่อร้าน / สถานที่</div>';return;}
-  // ── ตรวจสอบชื่อซ้ำ ──
   if(!editingContactId){
     const dupSnap=await db.collection('partner_contacts').where('bizName','==',bizName).limit(3).get();
     if(!dupSnap.empty){
@@ -1232,21 +1223,34 @@ async function saveContact(){
 
 async function deleteContact(id){if(!confirm('ลบผู้ประกอบการนี้?'))return;await db.collection('partner_contacts').doc(id).delete();loadContacts();}
 
-// ─── Admin Load Data ───
+// ─── Admin Load Data (แก้ให้ทนทาน โหลดแยกทีละอัน ไม่ค้างทั้งหน้า) ───
 async function loadAdminData(){
   setTimeout(()=>{if(document.getElementById('overviewMap'))initOverviewMap();},300);
-  const[usersSnap,pendingSnap,placesSnap,bookingsSnap]=await Promise.all([db.collection('business_accounts').get(),db.collection('pending_updates').where('status','==','pending').get(),db.collection('places').get(),db.collection('bookings').get()]);
-  document.getElementById('statUsers').textContent=usersSnap.size;document.getElementById('statPending').textContent=pendingSnap.size;document.getElementById('statPlaces').textContent=placesSnap.size;document.getElementById('pendingCount').textContent=pendingSnap.size||'';
-  const thisMonthStart=new Date();thisMonthStart.setDate(1);thisMonthStart.setHours(0,0,0,0);let newThisMonth=0;
-  usersSnap.docs.forEach(doc=>{const d=doc.data();const createdAt=d.createdAt?.toDate?d.createdAt.toDate():null;if(createdAt&&createdAt>=thisMonthStart)newThisMonth++;});
-  document.getElementById('statNewThisMonth').textContent=newThisMonth;
-  const rp=document.getElementById('recentPending');
-  if(pendingSnap.empty)rp.innerHTML='<div class="empty-state"><p>ไม่มีรายการรอ</p></div>';
-  else{rp.innerHTML='';pendingSnap.docs.slice(0,5).forEach(doc=>{const d=doc.data();rp.innerHTML+=`<div class="info-row"><span class="info-label">${BIZ_TYPES[d.bizType]?.label||'?'} · ${d.data?.name||'-'}</span><button class="btn-icon btn-view" onclick="openReview('${doc.id}')">ดู</button></div>`;});}
-  const rr=document.getElementById('recentRegistrations');
-  const regSnap=await db.collection('business_registrations').where('status','==','pending').orderBy('registeredAt','desc').limit(5).get();
-  if(regSnap.empty)rr.innerHTML='<div class="empty-state"><p>ไม่มีรายการรอ Approve</p></div>';
-  else{rr.innerHTML='';regSnap.docs.forEach(doc=>{const d=doc.data();rr.innerHTML+=`<div class="info-row"><span class="info-label">${BIZ_TYPES[d.bizType]?.label||'?'} · ${d.bizData?.name||'-'}</span><span class="badge badge-pending">รอ Approve</span></div>`;});}
+
+  db.collection('business_accounts').get().then(snap=>{
+    document.getElementById('statUsers').textContent=snap.size;
+    const m=new Date();m.setDate(1);m.setHours(0,0,0,0);let n=0;
+    snap.docs.forEach(doc=>{const c=doc.data().createdAt?.toDate?doc.data().createdAt.toDate():null;if(c&&c>=m)n++;});
+    document.getElementById('statNewThisMonth').textContent=n;
+  }).catch(e=>{console.error('❌ business_accounts:',e);document.getElementById('statUsers').textContent='!';document.getElementById('statNewThisMonth').textContent='!';});
+
+  db.collection('pending_updates').where('status','==','pending').get().then(snap=>{
+    document.getElementById('statPending').textContent=snap.size;
+    document.getElementById('pendingCount').textContent=snap.size||'';
+    const rp=document.getElementById('recentPending');
+    if(snap.empty)rp.innerHTML='<div class="empty-state"><p>ไม่มีรายการรอ</p></div>';
+    else{rp.innerHTML='';snap.docs.slice(0,5).forEach(doc=>{const d=doc.data();rp.innerHTML+=`<div class="info-row"><span class="info-label">${BIZ_TYPES[d.bizType]?.label||'?'} · ${d.data?.name||'-'}</span><button class="btn-icon btn-view" onclick="openReview('${doc.id}')">ดู</button></div>`;});}
+  }).catch(e=>{console.error('❌ pending_updates:',e);document.getElementById('statPending').textContent='!';document.getElementById('recentPending').innerHTML='<div class="empty-state"><p style="color:var(--red)">โหลดไม่ได้ — เช็ค Console</p></div>';});
+
+  db.collection('places').get().then(snap=>{
+    document.getElementById('statPlaces').textContent=snap.size;
+  }).catch(e=>{console.error('❌ places:',e);document.getElementById('statPlaces').textContent='!';});
+
+  db.collection('business_registrations').where('status','==','pending').orderBy('registeredAt','desc').limit(5).get().then(regSnap=>{
+    const rr=document.getElementById('recentRegistrations');
+    if(regSnap.empty)rr.innerHTML='<div class="empty-state"><p>ไม่มีรายการรอ Approve</p></div>';
+    else{rr.innerHTML='';regSnap.docs.forEach(doc=>{const d=doc.data();rr.innerHTML+=`<div class="info-row"><span class="info-label">${BIZ_TYPES[d.bizType]?.label||'?'} · ${d.bizData?.name||'-'}</span><span class="badge badge-pending">รอ Approve</span></div>`;});}
+  }).catch(e=>{console.error('❌ business_registrations:',e);document.getElementById('recentRegistrations').innerHTML='<div class="empty-state"><p style="color:var(--red)">โหลดไม่ได้ — อาจต้องสร้าง Index (เช็คลิงก์ใน Console)</p></div>';});
 }
 
 async function loadReviewList(){
@@ -1306,16 +1310,13 @@ async function loadUsers(){
 async function approveUser(id){const doc=await db.collection('business_accounts').doc(id).get();const email=doc.data()?.email;await db.collection('business_accounts').doc(id).update({status:'approved'});if(email){const regSnap=await db.collection('business_registrations').where('email','==',email).get();regSnap.docs.forEach(async d=>{await d.ref.update({status:'approved',approvedAt:firebase.firestore.FieldValue.serverTimestamp()});});}loadUsers();loadAdminData();}
 async function deleteUser(id){if(!confirm('ลบผู้ประกอบการนี้?'))return;await db.collection('business_accounts').doc(id).delete();loadUsers();}
 
-// ── Memory cache ──
-let _placesCache=null, _cacheTime=0;
 async function loadPlaces(filter,force=false){
-  const now=Date.now();
   const el=document.getElementById('placesList');el.innerHTML='<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
   allPlacesCache=[];let lastDoc=null;
   while(true){let q=db.collection('places');if(filter!=='all')q=q.where('category','==',filter);q=q.orderBy('__name__').limit(1000);if(lastDoc)q=q.startAfter(lastDoc);const snap=await q.get();if(snap.empty)break;allPlacesCache.push(...snap.docs.map(d=>({id:d.id,...d.data()})));lastDoc=snap.docs[snap.docs.length-1];if(snap.docs.length<1000)break;}
   if(filter==='all'){
     const counts={};allPlacesCache.forEach(p=>{counts[p.category]=(counts[p.category]||0)+1;});
-    ['hotel','cafe','mall','attraction','vet','petshop','boarding'].forEach(cat=>{const btn=document.getElementById(`filter-${cat}`);if(btn&&counts[cat]){const label=btn.textContent.split('(')[0].trim();btn.textContent=`${label} (${counts[cat]})`;}});
+    ['hotel','cafe','mall','attraction','vet','petshop','grooming','boarding'].forEach(cat=>{const btn=document.getElementById(`filter-${cat}`);if(btn&&counts[cat]){const label=btn.textContent.split('(')[0].trim();btn.textContent=`${label} (${counts[cat]})`;}});
     const provinces=[...new Set(allPlacesCache.map(p=>p.province).filter(Boolean))].sort();
     const sel=document.getElementById('placesProvinceFilter');
     if(sel){const current=sel.value;sel.innerHTML='<option value="">🗺️ ทุกจังหวัด</option>'+provinces.map(p=>`<option value="${p}" ${p===current?'selected':''}>${p}</option>`).join('');}
@@ -1329,20 +1330,63 @@ function filterPlacesLocal(){
   const q=(document.getElementById('placesSearch')?.value||'').toLowerCase().trim();
   const province=document.getElementById('placesProvinceFilter')?.value||'';
   const suggestEl=document.getElementById('searchSuggestions');
-  if(q.length>=1&&allPlacesCache.length){const matches=allPlacesCache.filter(p=>{const name=(p.name||p.nameThai||p.nameEnglish||'').toLowerCase();return name.includes(q);}).slice(0,8);if(matches.length>0){suggestEl.style.display='block';suggestEl.innerHTML=matches.map(p=>{const catMap={hotel:'🏨',cafe:'🍽️',mall:'🏬',attraction:'🌳',vet:'🏥',petshop:'🛍️',boarding:'🏡'};const name=p.name||p.nameThai||'-';return`<div onclick="selectSuggestion('${name.replace(/'/g,"\\'")}','${p.province||''}')" style="padding:8px 14px;cursor:pointer;font-size:13px;border-bottom:0.5px solid var(--gray-200)" onmouseover="this.style.background='var(--gray-100)'" onmouseout="this.style.background='white'">${catMap[p.category]||'📍'} <strong>${name}</strong> <span style="color:var(--gray-500);font-size:11px">· ${p.province}</span></div>`;}).join('');}else suggestEl.style.display='none';}else suggestEl.style.display='none';
+  if(q.length>=1&&allPlacesCache.length){const matches=allPlacesCache.filter(p=>{const name=(p.name||p.nameThai||p.nameEnglish||'').toLowerCase();return name.includes(q);}).slice(0,8);if(matches.length>0){suggestEl.style.display='block';suggestEl.innerHTML=matches.map(p=>{const catMap={hotel:'🏨',cafe:'🍽️',mall:'🏬',attraction:'🌳',vet:'🏥',petshop:'🛍️',grooming:'✂️',boarding:'🏡'};const name=p.name||p.nameThai||'-';return`<div onclick="selectSuggestion('${name.replace(/'/g,"\\'")}','${p.province||''}')" style="padding:8px 14px;cursor:pointer;font-size:13px;border-bottom:0.5px solid var(--gray-200)" onmouseover="this.style.background='var(--gray-100)'" onmouseout="this.style.background='white'">${catMap[p.category]||'📍'} <strong>${name}</strong> <span style="color:var(--gray-500);font-size:11px">· ${p.province}</span></div>`;}).join('');}else suggestEl.style.display='none';}else suggestEl.style.display='none';
   let result=allPlacesCache.filter(p=>{const name=(p.name||p.nameThai||p.nameEnglish||'').toLowerCase();const prov=(p.province||'').toLowerCase();const cat=(p.category||'').toLowerCase();const matchQ=!q||name.includes(q)||prov.includes(q)||cat.includes(q);const matchProv=!province||p.province===province;return matchQ&&matchProv;});
   renderPlaces(result);
 }
 function selectSuggestion(name,province){document.getElementById('placesSearch').value=name;document.getElementById('searchSuggestions').style.display='none';filterPlacesLocal();}
 
 function renderPlaces(places){
+  lastRenderedPlaces=places;   // ✅ เก็บไว้ให้ Export ใช้ (ตาม filter/search ปัจจุบัน)
   const el=document.getElementById('placesList');const countEl=document.getElementById('placesTotalCount');if(countEl)countEl.textContent=`(${places.length} สถานที่)`;
   if(!places.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📍</div><p>ไม่พบสถานที่</p></div>';return;}
   el.innerHTML='<div class="card"><table><thead><tr><th>ประเภท</th><th>ชื่อ</th><th>จังหวัด</th><th>เบอร์</th><th>แก้ไขล่าสุด</th><th>สถานะ</th><th></th></tr></thead><tbody id="placesTbody"></tbody></table></div>';
-  const tbody=document.getElementById('placesTbody');const catMap={hotel:'🏨',cafe:'🍽️',mall:'🏬',attraction:'🌳',vet:'🏥',petshop:'🛍️',boarding:'🏡'};
+  const tbody=document.getElementById('placesTbody');const catMap={hotel:'🏨',cafe:'🍽️',mall:'🏬',attraction:'🌳',vet:'🏥',petshop:'🛍️',grooming:'✂️',boarding:'🏡'};
   places.forEach(d=>{const lastEdit=d.lastEditedAt?new Date(d.lastEditedAt.seconds*1000).toLocaleDateString('th-TH'):'-';const lastEditor=d.lastEditedBy||'-';const displayName=d.nameThai||d.name||d.nameEnglish||'-';const subName=d.nameEnglish||'';tbody.innerHTML+=`<tr><td>${catMap[d.category]||'📍'} ${d.category||'-'}</td><td><strong>${displayName}</strong>${subName&&subName!==displayName?`<br><span style="font-size:11px;color:var(--gray-500)">${subName}</span>`:''}</td><td>${d.province||'-'}</td><td>${d.phone||'-'}</td><td style="font-size:11px;color:var(--gray-500)">${lastEdit!=='-'?`${lastEdit}<br><span style="color:var(--blue)">${lastEditor}</span>`:'-'}</td><td><span class="badge badge-approved">Live</span></td><td><div class="action-row"><button class="btn-icon btn-view" onclick="openEditPlace('${d.id}')">✏️ แก้ไข</button><button class="btn-icon btn-reject" onclick="deletePlace('${d.id}')">ลบ</button></div></td></tr>`;});
 }
 async function deletePlace(id){if(!confirm('ลบสถานที่นี้ออกจากแอปด้วย?'))return;await db.collection('places').doc(id).delete();loadPlaces('all');}
+
+// ─── ✅ Export Excel (เลือกคอลัมน์ได้) ───
+let lastRenderedPlaces=[];
+const EXPORT_COLUMNS=[
+  {key:'category',label:'ประเภท'},{key:'nameThai',label:'ชื่อไทย'},{key:'nameEnglish',label:'ชื่ออังกฤษ'},
+  {key:'name',label:'ชื่อ (name)'},{key:'province',label:'จังหวัด'},{key:'address',label:'ที่อยู่'},
+  {key:'phone',label:'เบอร์โทร'},{key:'openHours',label:'เวลาเปิด-ปิด'},{key:'googleMapUrl',label:'Google Maps URL'},
+  {key:'latitude',label:'Latitude'},{key:'longitude',label:'Longitude'},{key:'petPolicy',label:'นโยบายสัตว์'},
+  {key:'subType',label:'ประเภทย่อย'},{key:'services',label:'บริการ (vet/grooming)'},{key:'products',label:'สินค้า (petshop)'},
+  {key:'description',label:'คำอธิบาย'},{key:'lastEditedBy',label:'แก้ไขล่าสุดโดย'},
+];
+function exportColLabel(k){const c=EXPORT_COLUMNS.find(x=>x.key===k);return c?c.label:k;}
+function exportCellValue(p,k){
+  if(k==='latitude') return p.latitude ?? p.location?.latitude ?? '';
+  if(k==='longitude') return p.longitude ?? p.location?.longitude ?? '';
+  let v=p[k];
+  if(v==null) return '';
+  if(Array.isArray(v)) return v.join(', ');
+  if(typeof v==='object'){ if(typeof v.toDate==='function') return v.toDate().toLocaleString('th-TH'); return JSON.stringify(v); }
+  return v;
+}
+function openExportModal(){
+  const data=lastRenderedPlaces.length?lastRenderedPlaces:allPlacesCache;
+  document.getElementById('exportCountInfo').textContent=`จะ export ${data.length} รายการ (ตามที่กรอง/ค้นหาอยู่ตอนนี้)`;
+  document.getElementById('exportColList').innerHTML=EXPORT_COLUMNS.map(c=>`<label class="check-item"><input type="checkbox" class="export-col-cb" value="${c.key}" checked> ${c.label}</label>`).join('');
+  document.getElementById('exportSelectAll').checked=true;
+  openModal('exportModal');
+}
+function toggleAllExportCols(cb){document.querySelectorAll('.export-col-cb').forEach(c=>c.checked=cb.checked);}
+function doExportExcel(){
+  const cols=Array.from(document.querySelectorAll('.export-col-cb:checked')).map(cb=>cb.value);
+  if(!cols.length){alert('กรุณาเลือกอย่างน้อย 1 คอลัมน์');return;}
+  const data=lastRenderedPlaces.length?lastRenderedPlaces:allPlacesCache;
+  if(!data.length){alert('ไม่มีข้อมูลให้ export');return;}
+  const rows=data.map(p=>{const row={};cols.forEach(k=>{row[exportColLabel(k)]=exportCellValue(p,k);});return row;});
+  const ws=XLSX.utils.json_to_sheet(rows);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Places');
+  const today=new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb,`pippogo_places_${today}.xlsx`);
+  closeModal('exportModal');
+}
 
 async function loadAdminBookings(){
   const el=document.getElementById('adminBookingList');el.innerHTML='<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
@@ -1411,7 +1455,7 @@ async function loadPartners(){
   el.innerHTML='<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
   const snap=await db.collection('business_accounts').orderBy('createdAt','desc').get();
   if(snap.empty){el.innerHTML='<div class="empty-state"><div class="empty-icon">🏪</div><p>ยังไม่มีผู้ประกอบการ</p></div>';return;}
-  const CAT={hotel:'🏨 โรงแรม',cafe:'🍽️ ร้านอาหาร',mall:'🏬 ห้าง',attraction:'🌳 ท่องเที่ยว',vet:'🏥 รพ.สัตว์',petshop:'🛍️ Pet Shop',boarding:'🏡 รับฝาก'};
+  const CAT={hotel:'🏨 โรงแรม',cafe:'🍽️ ร้านอาหาร',mall:'🏬 ห้าง',attraction:'🌳 ท่องเที่ยว',vet:'🏥 รพ.สัตว์',petshop:'🛍️ Pet Shop',grooming:'✂️ Grooming',boarding:'🏡 รับฝาก'};
   el.innerHTML=`<div class="card"><table><thead><tr>
     <th>ร้าน/โรงแรม</th><th>ประเภท</th><th>อีเมล</th><th>สถานะ</th><th>Place ID</th><th>จัดการ</th>
   </tr></thead><tbody>${snap.docs.map(doc=>{
@@ -1522,16 +1566,16 @@ async function saveEditPlace(){
 
 // ─── Map ───
 let overviewMap=null,heatLayer=null,dotLayers=[],allMapPlaces=[],currentMapFilter='all',currentMapMode='heat';
-const catColors={hotel:'#2561E4',cafe:'#BA7517',mall:'#7B2D8B',attraction:'#1a6b35',vet:'#b00020',petshop:'#0C447C',boarding:'#5C4033'};
-const catLabels={hotel:'โรงแรม',cafe:'ร้านอาหาร',mall:'ห้าง',attraction:'ท่องเที่ยว',vet:'รพ.สัตว์',petshop:'Pet Shop',boarding:'รับฝาก'};
+const catColors={hotel:'#2561E4',cafe:'#BA7517',mall:'#7B2D8B',attraction:'#1a6b35',vet:'#b00020',petshop:'#0C447C',grooming:'#C2185B',boarding:'#5C4033'};
+const catLabels={hotel:'โรงแรม',cafe:'ร้านอาหาร',mall:'ห้าง',attraction:'ท่องเที่ยว',vet:'รพ.สัตว์',petshop:'Pet Shop',grooming:'Grooming',boarding:'รับฝาก'};
 async function initOverviewMap(){
   if(overviewMap)return;overviewMap=L.map('overviewMap',{zoomControl:true}).setView([13.0,101.0],6);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:18}).addTo(overviewMap);
   await loadMapPlaces();renderMap();
 }
 async function loadMapPlaces(){
-  allMapPlaces=[];const cats=['hotel','cafe','mall','attraction','vet','petshop','boarding'];
-  const promises=cats.map(cat=>db.collection('places').where('category','==',cat).get().then(snap=>{snap.docs.forEach(doc=>{const d=doc.data();let lat=0,lng=0;if(d.location){lat=d.location.latitude;lng=d.location.longitude;}else if(d.latitude&&d.longitude){lat=parseFloat(d.latitude);lng=parseFloat(d.longitude);}if(lat>5&&lat<21&&lng>97&&lng<106)allMapPlaces.push({id:doc.id,name:d.name||d.nameThai||'',cat,lat,lng,province:d.province||''});});}));
+  allMapPlaces=[];const cats=['hotel','cafe','mall','attraction','vet','petshop','grooming','boarding'];
+  const promises=cats.map(cat=>db.collection('places').where('category','==',cat).get().then(snap=>{snap.docs.forEach(doc=>{const d=doc.data();let lat=0,lng=0;if(d.location){lat=d.location.latitude;lng=d.location.longitude;}else if(d.latitude&&d.longitude){lat=parseFloat(d.latitude);lng=parseFloat(d.longitude);}if(lat>5&&lat<21&&lng>97&&lng<106)allMapPlaces.push({id:doc.id,name:d.name||d.nameThai||'',cat,lat,lng,province:d.province||''});});}).catch(e=>console.error('map '+cat,e)));
   await Promise.all(promises);
 }
 function getFilteredPlaces(){return currentMapFilter==='all'?allMapPlaces:allMapPlaces.filter(p=>p.cat===currentMapFilter);}
@@ -1555,7 +1599,6 @@ async function saveNewPlace(){
   if(!validatePhotos()){msgEl.innerHTML='<div class="error-msg">กรุณาใส่ URL รูปภาพอย่างน้อย 3 รูป</div>';return;}
   const data=collectBizFormData(type);
   if((!data.nameThai&&!data.nameEnglish)||!data.province){msgEl.innerHTML='<div class="error-msg">กรุณากรอกชื่อสถานที่และจังหวัด</div>';return;}
-  // ── ตรวจสอบชื่อซ้ำ (Admin เท่านั้น) ──
   const searchName=data.nameThai||data.nameEnglish||'';
   const dupSnap=await db.collection('places').where('nameThai','==',searchName).limit(5).get();
   const dupSnap2=searchName?await db.collection('places').where('name','==',searchName).limit(5).get():null;
@@ -1566,7 +1609,6 @@ async function saveNewPlace(){
     const ok=confirm('⚠️ พบสถานที่ที่มีชื่อคล้ายกัน:\n'+dupList+'\n\nต้องการเพิ่มต่อไปหรือไม่? (อาจเป็นคนละสาขา)');
     if(!ok)return;
   }
-
   data.sync_status='synced';data.addedBy='admin';data.addedAt=firebase.firestore.FieldValue.serverTimestamp();
   try{await db.collection('places').add(data);closeModal('addPlaceModal');loadPlaces('all');loadAdminData();alert('✅ เพิ่มสถานที่สำเร็จ! ขึ้นแอปแล้ว');}
   catch(e){msgEl.innerHTML='<div class="error-msg">เกิดข้อผิดพลาด: '+e.message+'</div>';}
@@ -1646,69 +1688,6 @@ function applyHoursPreset(preset){
   else if(preset==='weekday'){weekdays.forEach(function(k){setDay(k,true);});weekend.forEach(function(k){setDay(k,false);});}
   else if(preset==='weekend'){weekend.forEach(function(k){setDay(k,true);});weekdays.forEach(function(k){setDay(k,false);});}
   else if(preset==='except_mon'){days.forEach(function(k){setDay(k,true);});setDay('mon',false);}
-}
-
-// ─── Pending Approvals ───
-async function loadPending() {
-  const el = document.getElementById('pendingList');
-  const snap = await db.collection('pending_updates').where('status','==','pending').orderBy('submittedAt','desc').get();
-  // update badge
-  const countEl = document.getElementById('pendingCount');
-  if (snap.size > 0) { countEl.style.display='inline'; countEl.textContent=snap.size; }
-  else { countEl.style.display='none'; }
-
-  if (snap.empty) { el.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><p>ไม่มีรายการรออนุมัติ</p></div>'; return; }
-
-  el.innerHTML = snap.docs.map(doc => {
-    const d = doc.data();
-    const date = d.submittedAt?.toDate()?.toLocaleDateString('th-TH')||'-';
-    const changes = Object.entries(d.changes||{}).filter(([k,v])=>v).slice(0,5)
-      .map(([k,v])=>`<div style="font-size:11px;color:var(--gray-500)">${k}: <strong>${v}</strong></div>`).join('');
-    return `<div class="card" style="margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-        <div>
-          <div style="font-size:15px;font-weight:700">${d.bizName||'-'}</div>
-          <div style="font-size:12px;color:var(--gray-500)">${d.email||''} · ${date}</div>
-          <a href="partner.html?uid=${d.submittedBy}" target="_blank" style="font-size:11px;color:var(--blue);text-decoration:none">🔗 ดู Partner Dashboard</a>
-        </div>
-        <span class="badge badge-pending">รอตรวจสอบ</span>
-      </div>
-      <div style="background:var(--gray-100);border-radius:8px;padding:10px;margin-bottom:10px">${changes}</div>
-      <div style="display:flex;gap:8px">
-        <button class="btn-icon btn-approve" onclick="approvePending('${doc.id}','${d.placeId||''}',${JSON.stringify(JSON.stringify(d.changes||{}))})">✅ Approve</button>
-        <button class="btn-icon btn-reject" onclick="rejectPending('${doc.id}')">❌ Reject</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-async function approvePending(docId, placeId, changesStr) {
-  const changes = JSON.parse(changesStr);
-  try {
-    if (placeId) {
-      await db.collection('places').doc(placeId).update({ ...changes, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() });
-    }
-    await db.collection('pending_updates').doc(docId).update({
-      status: 'approved',
-      reviewedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      reviewedBy: currentUser.email
-    });
-    alert('✅ Approve สำเร็จ! ข้อมูลขึ้นแอปแล้ว');
-    loadPending();
-  } catch(e) { alert('เกิดข้อผิดพลาด: '+e.message); }
-}
-
-async function rejectPending(docId) {
-  const reason = prompt('เหตุผลที่ไม่อนุมัติ (ถ้ามี):');
-  if (reason === null) return;
-  await db.collection('pending_updates').doc(docId).update({
-    status: 'rejected',
-    rejectReason: reason,
-    reviewedAt: firebase.firestore.FieldValue.serverTimestamp(),
-    reviewedBy: currentUser.email
-  });
-  alert('❌ Reject แล้ว ผู้ประกอบการจะได้รับแจ้ง');
-  loadPending();
 }
 
 // ─── Province Autocomplete (universal) ───
