@@ -881,23 +881,41 @@ async function handleLogout(){await auth.signOut();document.getElementById('main
 
 auth.onAuthStateChanged(async(user)=>{
   if(!user){document.getElementById('authScreen').style.display='flex';document.getElementById('mainApp').classList.remove('visible');return;}
-  currentUser=user;document.getElementById('authScreen').style.display='none';document.getElementById('mainApp').classList.add('visible');document.getElementById('userEmail').textContent=user.email;
-  const adminSnap=await db.collection('admins').where('email','==',user.email).limit(1).get();
-  const isAdmin=ADMIN_EMAILS.includes(user.email)||!adminSnap.empty;
+  currentUser=user;
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('mainApp').classList.add('visible');
+  document.getElementById('userEmail').textContent=user.email;
+
+  // ── เช็คสิทธิ์ admin: เมลหลัก (hardcode) ก่อน ไม่ต้องอ่าน Firestore ──
+  let isAdmin=false, adminRole='admin';
+  if(ADMIN_EMAILS.includes(user.email)){
+    isAdmin=true; adminRole='superadmin';
+  } else {
+    // เมลทีม: ลองอ่าน admins collection (กันพังถ้า rules ปฏิเสธ — ไม่ให้ค้าง)
+    try{
+      const adminSnap=await db.collection('admins').where('email','==',user.email).limit(1).get();
+      if(!adminSnap.empty){ isAdmin=true; adminRole=adminSnap.docs[0].data().role||'admin'; }
+    }catch(e){ console.warn('อ่าน admins ไม่ได้ (rules?):', e.message); }
+  }
+
   if(isAdmin){
-    let adminRole='admin';
-    if(ADMIN_EMAILS.includes(user.email))adminRole='superadmin';
-    else if(!adminSnap.empty)adminRole=adminSnap.docs[0].data().role||'admin';
     currentRole=adminRole;
-    currentUserRole=adminRole; // sync กับ role system ใหม่
+    currentUserRole=adminRole;
     document.getElementById('adminBadge').style.display='inline';
     document.getElementById('adminBadge').textContent=adminRole==='superadmin'?'👑 SUPER ADMIN':'🛡️ ADMIN';
     document.getElementById('portalLabel').textContent='Admin Dashboard';
-    document.getElementById('adminNav').style.display='block';setTimeout(applyRoleUI,100);document.getElementById('bizNav').style.display='none';
+    document.getElementById('adminNav').style.display='block';
+    setTimeout(applyRoleUI,100);
+    document.getElementById('bizNav').style.display='none';
     const isSuperAdmin=adminRole==='superadmin';
     document.querySelectorAll('.superadmin-only').forEach(el=>{el.style.display=isSuperAdmin?'flex':'none';});
-    goPage('adminOverview');loadAdminData();
-  }else{
+    goPage('adminOverview');
+    loadAdminData();
+    return;
+  }
+
+  // ── ไม่ใช่ admin → ตรวจสิทธิ์ผู้ประกอบการ (ครอบ try/catch กันค้าง) ──
+  try{
     currentRole='business';
     const snap=await db.collection('business_accounts').where('email','==',user.email).limit(1).get();
     if(!snap.empty){
@@ -908,7 +926,20 @@ auth.onAuthStateChanged(async(user)=>{
       document.getElementById('portalLabel').textContent='Business Portal';document.getElementById('adminNav').style.display='none';document.getElementById('bizNav').style.display='block';
       document.getElementById('navRooms').style.display=biz.hasRooms?'flex':'none';
       loadBizForm();goPage('bizInfo');
+    } else {
+      // ไม่พบทั้งสิทธิ์ admin และผู้ประกอบการ → เด้งออกพร้อมแจ้งเหตุผล (ไม่ค้างหน้าเปล่า)
+      document.getElementById('mainApp').classList.remove('visible');
+      document.getElementById('authScreen').style.display='flex';
+      document.getElementById('loginError').textContent='บัญชีนี้ยังไม่มีสิทธิ์เข้าใช้งาน (ไม่พบทั้งสิทธิ์ Admin และผู้ประกอบการ)';
+      document.getElementById('loginError').style.display='block';
+      await auth.signOut();
     }
+  }catch(e){
+    console.error('โหลดข้อมูลผู้ใช้ล้มเหลว:', e);
+    document.getElementById('mainApp').classList.remove('visible');
+    document.getElementById('authScreen').style.display='flex';
+    document.getElementById('loginError').textContent='เกิดข้อผิดพลาดในการเข้าสู่ระบบ: '+e.message;
+    document.getElementById('loginError').style.display='block';
   }
 });
 
@@ -1254,9 +1285,13 @@ async function loadAdminData(){
     else{rp.innerHTML='';snap.docs.slice(0,5).forEach(doc=>{const d=doc.data();rp.innerHTML+=`<div class="info-row"><span class="info-label">${BIZ_TYPES[d.bizType]?.label||'?'} · ${d.data?.name||'-'}</span><button class="btn-icon btn-view" onclick="openReview('${doc.id}')">ดู</button></div>`;});}
   }).catch(e=>{console.error('❌ pending_updates:',e);document.getElementById('statPending').textContent='!';document.getElementById('recentPending').innerHTML='<div class="empty-state"><p style="color:var(--red)">โหลดไม่ได้ — เช็ค Console</p></div>';});
 
-  db.collection('places').get().then(snap=>{
-    document.getElementById('statPlaces').textContent=snap.size;
-  }).catch(e=>{console.error('❌ places:',e);document.getElementById('statPlaces').textContent='!';});
+  db.collection('places').count().get().then(agg=>{
+    document.getElementById('statPlaces').textContent=agg.data().count;
+  }).catch(e=>{console.error('❌ places count:',e);
+    // fallback: ถ้า count() ไม่รองรับ ใช้วิธีเดิม
+    db.collection('places').get().then(snap=>{document.getElementById('statPlaces').textContent=snap.size;})
+      .catch(e2=>{console.error('❌ places:',e2);document.getElementById('statPlaces').textContent='!';});
+  });
 
   db.collection('business_registrations').where('status','==','pending').orderBy('registeredAt','desc').limit(5).get().then(regSnap=>{
     const rr=document.getElementById('recentRegistrations');
