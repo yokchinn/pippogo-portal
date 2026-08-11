@@ -233,6 +233,7 @@ tr:hover td{background:var(--gray-50);}
         <button class="nav-item" onclick="goPage('adminPlaces')"><span>📍</span> สถานที่ทั้งหมด</button>
         <button class="nav-item" onclick="goPage('adminContacts')"><span>📒</span> ข้อมูลผู้ประกอบการ</button>
         <button class="nav-item" onclick="goPage('adminBookings')"><span>📋</span> Bookings</button>
+        <button class="nav-item" onclick="goPage('adminReviewMod')"><span>🚩</span> ตรวจรีวิว <span id="reportCount" style="background:var(--red);color:white;border-radius:20px;padding:1px 7px;font-size:10px;margin-left:4px"></span></button>
         <button class="nav-item superadmin-only" onclick="goPage('adminRevenue')"><span>💰</span> Revenue</button>
         <button class="nav-item superadmin-only" onclick="goPage('adminPartners')"><span>🏪</span> จัดการ Partner</button>
         <button class="nav-item superadmin-only" onclick="goPage('adminTeam')"><span>🛡️</span> จัดการ Admin</button>
@@ -378,6 +379,16 @@ tr:hover td{background:var(--gray-50);}
       <div class="page" id="page-adminBookings">
         <div class="page-title">Bookings ทั้งหมด</div><div class="page-sub">การจองโรงแรมจากแอป PippoGO</div>
         <div id="adminBookingList"><div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div></div>
+      </div>
+      <div class="page" id="page-adminReviewMod">
+        <div class="flex-between">
+          <div><div class="page-title">ตรวจรีวิว 🚩</div><div class="page-sub">รายงานจากผู้ใช้ + จัดการรีวิวทั้งหมด (ซ่อน/ลบได้เฉพาะ Admin)</div></div>
+        </div>
+        <div style="display:flex;gap:8px;margin:8px 0 16px">
+          <button class="btn btn-sm" id="revTabReports" onclick="switchReviewTab('reports')" style="background:var(--red);color:white">🚩 รายงานที่รอตรวจ</button>
+          <button class="btn btn-sm" id="revTabAll" onclick="switchReviewTab('all')" style="background:var(--gray-100);color:var(--gray-700)">💬 รีวิวทั้งหมด</button>
+        </div>
+        <div id="reviewModList"><div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div></div>
       </div>
       <div class="page" id="page-adminRevenue">
         <div class="page-title">Revenue</div><div class="page-sub">รายได้จากการจองผ่านแอป PippoGO</div>
@@ -929,6 +940,7 @@ function goPage(pageId){
   if(pageId==='adminUsers')loadUsers();
   if(pageId==='adminPlaces')loadPlaces('all');
   if(pageId==='adminBookings')loadAdminBookings();
+  if(pageId==='adminReviewMod')loadReviewMod();
   if(pageId==='adminContacts')loadContacts();
   if(pageId==='adminRevenue')loadRevenue();
   if(pageId==='adminTeam')loadAdminTeam();
@@ -1735,6 +1747,130 @@ function previewOnMap(){const lat=document.getElementById('bLat')?.value,lng=doc
 
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
+// ─── Review Moderation (ตรวจรีวิว) ───
+let reviewTab='reports';
+function switchReviewTab(tab){
+  reviewTab=tab;
+  document.getElementById('revTabReports').style.cssText = tab==='reports'
+    ? 'background:var(--red);color:white' : 'background:var(--gray-100);color:var(--gray-700)';
+  document.getElementById('revTabAll').style.cssText = tab==='all'
+    ? 'background:var(--blue);color:white' : 'background:var(--gray-100);color:var(--gray-700)';
+  loadReviewMod();
+}
+
+async function loadReviewMod(){
+  const el=document.getElementById('reviewModList');
+  el.innerHTML='<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
+  try{
+    if(reviewTab==='reports') await renderReports(el);
+    else await renderAllReviews(el);
+  }catch(e){
+    el.innerHTML='<div class="empty-state"><p>เกิดข้อผิดพลาด: '+e.message+'</p><p style="font-size:12px;color:var(--gray-500)">ถ้าเป็น Missing index ให้กดลิงก์ใน Console (F12) เพื่อสร้าง index</p></div>';
+  }
+}
+
+async function renderReports(el){
+  const snap=await db.collection('review_reports').where('status','==','pending').limit(100).get();
+  // อัปเดต badge จำนวนรายงาน
+  const badge=document.getElementById('reportCount'); if(badge) badge.textContent=snap.size||'';
+  if(snap.empty){el.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><p>ไม่มีรายงานที่รอตรวจ</p></div>';return;}
+  const rows=snap.docs.map(doc=>{
+    const d=doc.data();
+    const dt=d.createdAt?.toDate?d.createdAt.toDate().toLocaleString('th-TH'):'-';
+    return `<div class="card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:240px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span class="badge badge-rejected">🚩 ${d.reason||'รายงาน'}</span>
+            <span style="font-size:11px;color:var(--gray-500)">${dt}</span>
+          </div>
+          <div style="font-size:13px;color:var(--gray-700);margin-bottom:4px"><strong>ร้าน:</strong> ${d.placeName||d.placeId||'-'}</div>
+          <div style="font-size:13px;margin-bottom:4px"><strong>รีวิวโดย:</strong> ${d.reviewUserName||'-'}</div>
+          <div style="background:var(--gray-100);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--gray-700);margin:6px 0">${d.reviewText? d.reviewText : '<span style="color:var(--gray-400)">(ไม่มีข้อความ / เป็นรูปภาพ)</span>'}</div>
+          <div style="font-size:11px;color:var(--gray-500)">รายงานโดย: ${d.reporterName||d.reportedBy||'-'}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;min-width:130px">
+          <button class="btn-icon btn-reject" onclick="modHideReview('${d.reviewId}','${doc.id}')">🙈 ซ่อนรีวิว</button>
+          <button class="btn-icon btn-reject" onclick="modDeleteReview('${d.reviewId}','${doc.id}')">🗑 ลบรีวิว</button>
+          <button class="btn-icon btn-approve" onclick="modDismissReport('${doc.id}')">✅ รีวิวปกติ (ปิดรายงาน)</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  el.innerHTML=rows;
+}
+
+async function renderAllReviews(el){
+  const snap=await db.collection('reviews').orderBy('createdAt','desc').limit(100).get();
+  if(snap.empty){el.innerHTML='<div class="empty-state"><div class="empty-icon">💬</div><p>ยังไม่มีรีวิว</p></div>';return;}
+  const rows=snap.docs.map(doc=>{
+    const d=doc.data();
+    const dt=d.createdAt?.toDate?d.createdAt.toDate().toLocaleDateString('th-TH'):'-';
+    const overall=((Number(d.taste||0)+Number(d.ambiance||0)+Number(d.pet||0))/3).toFixed(1);
+    const hidden=d.hidden===true;
+    const photos=(d.photos||[]).map(u=>`<img src="${u}" style="width:52px;height:52px;object-fit:cover;border-radius:6px;margin-right:4px">`).join('');
+    return `<div class="card" style="margin-bottom:12px;${hidden?'opacity:.55':''}">
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:240px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <strong style="font-size:14px">${d.userName||'-'}</strong>
+            <span style="font-size:12px;color:#FFA000">★ ${overall}</span>
+            ${hidden?'<span class="badge badge-rejected">🙈 ซ่อนอยู่</span>':''}
+            <span style="font-size:11px;color:var(--gray-500)">${dt}</span>
+          </div>
+          <div style="font-size:12px;color:var(--gray-500);margin-bottom:4px">🍜 ${d.taste||0} · 🌿 ${d.ambiance||0} · 🐾 ${d.pet||0}</div>
+          <div style="font-size:13px;color:var(--gray-700);margin-bottom:6px">${d.text||'<span style="color:var(--gray-400)">(ไม่มีข้อความ)</span>'}</div>
+          <div>${photos}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;min-width:130px">
+          ${hidden
+            ? `<button class="btn-icon btn-approve" onclick="modUnhideReview('${doc.id}')">👁 เลิกซ่อน</button>`
+            : `<button class="btn-icon btn-reject" onclick="modHideReview('${doc.id}','')">🙈 ซ่อนรีวิว</button>`}
+          <button class="btn-icon btn-reject" onclick="modDeleteReview('${doc.id}','')">🗑 ลบรีวิว</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  el.innerHTML=rows;
+}
+
+async function modHideReview(reviewId, reportId){
+  if(!reviewId){alert('ไม่พบ reviewId');return;}
+  if(!confirm('ซ่อนรีวิวนี้จากแอป? (ยังเก็บข้อมูลไว้ กู้คืนได้)'))return;
+  try{
+    await db.collection('reviews').doc(reviewId).update({hidden:true});
+    if(reportId) await db.collection('review_reports').doc(reportId).update({status:'resolved',action:'hidden'});
+    alert('🙈 ซ่อนรีวิวแล้ว');
+    loadReviewMod();
+  }catch(e){alert('ผิดพลาด: '+e.message);}
+}
+
+async function modUnhideReview(reviewId){
+  try{
+    await db.collection('reviews').doc(reviewId).update({hidden:false});
+    alert('👁 เลิกซ่อนแล้ว');
+    loadReviewMod();
+  }catch(e){alert('ผิดพลาด: '+e.message);}
+}
+
+async function modDeleteReview(reviewId, reportId){
+  if(!reviewId){alert('ไม่พบ reviewId');return;}
+  if(!confirm('⚠️ ลบรีวิวนี้ถาวร? กู้คืนไม่ได้'))return;
+  try{
+    await db.collection('reviews').doc(reviewId).delete();
+    if(reportId) await db.collection('review_reports').doc(reportId).update({status:'resolved',action:'deleted'});
+    alert('🗑 ลบรีวิวแล้ว');
+    loadReviewMod();
+  }catch(e){alert('ผิดพลาด: '+e.message);}
+}
+
+async function modDismissReport(reportId){
+  try{
+    await db.collection('review_reports').doc(reportId).update({status:'dismissed'});
+    loadReviewMod();
+  }catch(e){alert('ผิดพลาด: '+e.message);}
+}
+
 document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
 </script>
 </body>
