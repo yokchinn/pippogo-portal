@@ -21,8 +21,7 @@ body{font-family:'Noto Sans Thai',sans-serif;background:#f7f9fe;color:#333E50;mi
 }
 
 /* AUTH */
-.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-height(135deg,#1a3fa8,var(--blue));}
-.auth-wrap{background:linear-gradient(135deg,#1a3fa8 0%,var(--blue) 100%);}
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#1a3fa8 0%,var(--blue) 100%);}
 .auth-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:32px;width:100%;max-width:460px;}
 .auth-logo{text-align:center;margin-bottom:24px;}
 .auth-logo-box{background:var(--blue);border-radius:16px;padding:12px 28px;display:inline-block;margin-bottom:8px;}
@@ -125,14 +124,14 @@ tr:last-child td{border-bottom:none;}
     <!-- LOGIN -->
     <div id="loginForm">
       <div class="field"><label>อีเมล</label><input type="email" id="loginEmail" placeholder="email@example.com"></div>
-      <div class="field"><label>รหัสผ่าน</label><input type="password" id="loginPassword" placeholder="••••••••"></div>
+      <div class="field"><label>รหัสผ่าน</label><input type="password" id="loginPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <button class="btn-primary" onclick="doLogin()">เข้าสู่ระบบ</button>
     </div>
 
     <!-- SIGNUP LINK (register moved to /signup) -->
     <div style="text-align:center;margin-top:18px;padding-top:16px;border-top:1px solid var(--gray-200)">
       <span style="font-size:13px;color:var(--gray-500)">ยังไม่มีบัญชี? </span>
-      <a href="signup" style="font-size:13px;color:var(--blue);font-weight:600;text-decoration:none">สมัครเป็นผู้ประกอบการ →</a>
+      <a href="signup.html" style="font-size:13px;color:var(--blue);font-weight:600;text-decoration:none">สมัครเป็นผู้ประกอบการ →</a>
     </div>
   </div>
 </div>
@@ -204,21 +203,21 @@ tr:last-child td{border-bottom:none;}
 </div>
 
 <script>
-// ── Firebase Config ──
+// ── Firebase Config (ตรงกับ index.html / signup.html) ──
 const firebaseConfig = {
   apiKey: "AIzaSyD88Om-vKnpvX2RUSVifrSH_EA0gBcrHOA",
   authDomain: "pippo-go.firebaseapp.com",
   projectId: "pippo-go",
-  storageBucket: "pippo-go.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef"
+  storageBucket: "pippo-go.firebasestorage.app",
+  messagingSenderId: "828784788403",
+  appId: "1:828784788403:web:2445bfb05c0f60678c41c6"
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
 const ADMIN_EMAILS = ['admin@pippogo.com','seth@pippogo.com','yok-chinn@hotmail.com'];
-const CAT_NAMES = {hotel:'🏨 โรงแรม',cafe:'🍽️ ร้านอาหาร/คาเฟ่',mall:'🏬 ห้าง',attraction:'🌳 ท่องเที่ยว',vet:'🏥 รพ.สัตว์',petshop:'🛍️ Pet Shop',boarding:'🏡 รับฝาก'};
+const CAT_NAMES = {hotel:'🏨 โรงแรม',cafe:'🍽️ ร้านอาหาร/คาเฟ่',mall:'🏬 ห้าง',attraction:'🌳 ท่องเที่ยว',vet:'🏥 รพ.สัตว์',petshop:'🛍️ Pet Shop',grooming:'✂️ Grooming',boarding:'🏡 รับฝาก'};
 
 let currentUser = null;
 let bizData = null;
@@ -237,14 +236,24 @@ auth.onAuthStateChanged(async user => {
   showApp();
 });
 
+// ✅ FIX 1: หาข้อมูลร้านด้วย "อีเมล" (เพราะ business_accounts ถูกสร้างด้วย auto-id ไม่ใช่ uid)
 async function loadBizData() {
-  const doc = await db.collection('business_accounts').doc(currentUser.uid).get();
-  if (doc.exists) {
-    bizData = doc.data();
-    if (bizData.placeId) {
-      const placeDoc = await db.collection('places').doc(bizData.placeId).get();
-      if (placeDoc.exists) placeData = { id: placeDoc.id, ...placeDoc.data() };
+  bizData = null; placeData = null;
+  try {
+    const snap = await db.collection('business_accounts')
+      .where('email','==',currentUser.email).limit(1).get();
+    if (!snap.empty) {
+      const d0 = snap.docs[0];
+      bizData = { _docId: d0.id, ...d0.data() };
+      // admin จะตั้งค่า bizId ให้ตอน approve (บางระบบใช้ placeId — รองรับทั้งคู่)
+      const placeId = bizData.bizId || bizData.placeId;
+      if (placeId) {
+        const placeDoc = await db.collection('places').doc(placeId).get();
+        if (placeDoc.exists) placeData = { id: placeDoc.id, ...placeDoc.data() };
+      }
     }
+  } catch(e) {
+    console.error('loadBizData error:', e);
   }
 }
 
@@ -259,8 +268,9 @@ function showApp() {
   document.getElementById('userEmailDisplay').textContent = currentUser.email;
 
   if (bizData) {
-    document.getElementById('bizBadge').textContent = CAT_NAMES[bizData.category] || 'Partner';
-    if (bizData.category === 'hotel') {
+    const cat = bizData.category || bizData.bizType;
+    document.getElementById('bizBadge').textContent = CAT_NAMES[cat] || 'Partner';
+    if (cat === 'hotel') {
       document.querySelectorAll('.hotel-only').forEach(el => el.style.display = 'flex');
     }
     loadDashboard();
@@ -307,11 +317,12 @@ async function loadDashboard() {
   const title = document.getElementById('dashTitle');
   const sub = document.getElementById('dashSub');
   const grid = document.getElementById('statGrid');
+  const cat = bizData?.category || bizData?.bizType;
 
   title.textContent = `สวัสดี, ${bizData?.bizName || currentUser.email}`;
-  sub.textContent = CAT_NAMES[bizData?.category] || 'Partner';
+  sub.textContent = CAT_NAMES[cat] || 'Partner';
 
-  if (bizData?.category === 'hotel') {
+  if (cat === 'hotel') {
     // โรงแรม: นับการจอง
     const snap = await db.collection('bookings').where('hotelOwnerId','==',currentUser.uid).get();
     const total = snap.size;
@@ -358,7 +369,8 @@ async function checkPending() {
 // ── INFO FORM ──
 function loadInfoForm() {
   const d = placeData || {};
-  const isHotel = bizData?.category === 'hotel';
+  const cat = bizData?.category || bizData?.bizType;
+  const isHotel = cat === 'hotel';
   document.getElementById('infoFormWrap').innerHTML = `
     <div class="card">
       <div class="card-title">ข้อมูลพื้นฐาน</div>
@@ -368,7 +380,7 @@ function loadInfoForm() {
           <div class="field"><label>ชื่อร้าน (English)</label><input type="text" id="iNameEn" value="${d.nameEnglish||''}"></div>
         </div>
         <div class="field-row">
-          <div class="field"><label>เบอร์โทร</label><input type="tel" id="iPhone" value="${d.phone||bizData?.phone||''}"></div>
+          <div class="field"><label>เบอร์โทร</label><input type="tel" id="iPhone" value="${d.phone||bizData?.contactPhone||''}"></div>
           <div class="field"><label>จังหวัด</label><input type="text" id="iProvince" value="${d.province||''}"></div>
         </div>
         <div class="field"><label>ที่อยู่</label><textarea id="iAddress">${d.address||''}</textarea></div>
@@ -406,34 +418,55 @@ function loadInfoForm() {
   `;
 }
 
+// ✅ FIX 2: ส่งข้อมูลในรูปแบบที่ index.html (หลังบ้าน) อ่านได้ — ใช้ field "data", "bizId", "hotelEmail", "bizType"
 async function submitInfoUpdate() {
   const g = id => { const el=document.getElementById(id); return el?el.value:''; };
-  const isHotel = bizData?.category === 'hotel';
-  const changes = {
-    nameThai: g('iNameTh'), nameEnglish: g('iNameEn'),
-    phone: g('iPhone'), province: g('iProvince'),
-    address: g('iAddress'), googleMapUrl: g('iMapUrl'),
-    defaultOpenTime: g('iOpen'), defaultCloseTime: g('iClose'),
-    openNote: g('iOpenNote'), petPolicy: g('iPetPolicy'),
-    petDetail: g('iPetDetail'), description: g('iDesc'),
+  const cat = bizData?.category || bizData?.bizType || '';
+  const isHotel = cat === 'hotel';
+
+  // เก็บฟิลด์สถานที่ทั้งหมดไว้ใน object เดียว (ตรงกับที่หลังบ้านนำไปสร้าง/อัปเดต places)
+  const data = {
+    name: g('iNameTh') || g('iNameEn'),
+    nameThai: g('iNameTh'),
+    nameEnglish: g('iNameEn'),
+    phone: g('iPhone'),
+    province: g('iProvince'),
+    address: g('iAddress'),
+    googleMapUrl: g('iMapUrl'),
+    defaultOpenTime: g('iOpen'),
+    defaultCloseTime: g('iClose'),
+    openNote: g('iOpenNote'),
+    petPolicy: g('iPetPolicy'),
+    petDetail: g('iPetDetail'),
+    description: g('iDesc'),
+    category: cat
   };
   if (isHotel) {
-    changes.checkInTime = g('iCheckIn');
-    changes.checkOutTime = g('iCheckOut');
-    changes.petFeePerNight = parseFloat(g('iPetFee'))||0;
-    changes.maxPetWeight = parseFloat(g('iMaxWeight'))||0;
-    changes.cancellationPolicy = g('iCancel');
+    data.checkInTime = g('iCheckIn');
+    data.checkOutTime = g('iCheckOut');
+    data.petFeePerNight = parseFloat(g('iPetFee'))||0;
+    data.maxPetWeight = parseFloat(g('iMaxWeight'))||0;
+    data.cancellationPolicy = g('iCancel');
   }
+
+  if (!data.name || !data.province) {
+    alert('กรุณากรอกชื่อร้านและจังหวัดก่อนส่ง');
+    return;
+  }
+
   try {
     await db.collection('pending_updates').add({
-      placeId: bizData?.placeId || null,
-      submittedBy: currentUser.uid,
-      bizName: bizData?.bizName || '',
-      category: bizData?.category || '',
-      email: currentUser.email,
-      changes,
+      // ── ฟิลด์ที่หลังบ้าน (index.html) ใช้ ──
+      bizId: bizData?.bizId || bizData?.placeId || null,
+      bizType: cat,
+      hotelEmail: currentUser.email,
       status: 'pending',
-      submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+      submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      data: data,
+      // ── ฟิลด์ที่ partner.html ใช้เอง(หน้าสถานะ/แบนเนอร์) ──
+      submittedBy: currentUser.uid,
+      bizName: bizData?.bizName || data.name,
+      category: cat
     });
     alert('✅ ส่งข้อมูลแล้ว! Admin จะตรวจสอบภายใน 1-2 วันทำการ');
     checkPending();
@@ -492,7 +525,7 @@ async function loadStatus() {
         <div>
           <div style="font-size:13px;font-weight:600">แก้ไขข้อมูล${d.bizName?` · ${d.bizName}`:''}</div>
           <div style="font-size:11px;color:var(--gray-500)">${date}</div>
-          ${d.rejectReason?`<div style="font-size:12px;color:var(--red);margin-top:4px">เหตุผล: ${d.rejectReason}</div>`:''}
+          ${d.adminNote?`<div style="font-size:12px;color:var(--red);margin-top:4px">เหตุผล: ${d.adminNote}</div>`:''}
         </div>
         <span class="badge badge-${d.status==='approved'?'approved':d.status==='rejected'?'rejected':'pending'}">${d.status==='approved'?'อนุมัติ':d.status==='rejected'?'ไม่อนุมัติ':'รอตรวจสอบ'}</span>
       </div>
