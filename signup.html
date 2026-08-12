@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สมัครเป็นผู้ประกอบการ · PippoGO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
+:root {
+  --blue:#2561E4;--blue-light:#EBF1FD;--blue-dark:#1a4fd4;
+  --yellow:#FFD106;--green:#1a6b35;--green-light:#e3f5e9;
+  --red:#b00020;--red-light:#fdecea;--orange:#BA7517;--orange-light:#fff8e6;
+  --gray-50:#FFFEFB;--gray-100:#f7f9fe;--gray-200:#e8edf5;
+  --gray-400:#D2D1D0;--gray-500:#6b7a8d;--gray-700:#333E50;
+  --shadow:0 2px 12px rgba(0,0,0,0.08);--radius:12px;--radius-sm:8px;
+  --font:'Noto Sans Thai',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--gray-50);color:var(--gray-700);min-height:100vh;}
+.auth-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+.auth-logo{background:var(--blue);border-radius:20px;padding:16px 32px;margin-bottom:32px;}
+.auth-logo span{font-size:28px;font-weight:700;color:white;}
+.auth-logo .go{color:var(--yellow);}
+.auth-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:32px;width:100%;max-width:440px;}
+.auth-card h2{font-size:20px;font-weight:600;margin-bottom:6px;}
+.auth-card p{font-size:13px;color:var(--gray-500);margin-bottom:20px;}
+.tab-row{display:flex;background:var(--gray-100);border-radius:var(--radius-sm);padding:4px;margin-bottom:20px;}
+.tab-btn{flex:1;padding:8px;border:none;background:transparent;border-radius:6px;font-family:var(--font);font-size:12px;font-weight:500;cursor:pointer;color:var(--gray-500);transition:all .2s;}
+.tab-btn.active{background:white;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.1);}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font);font-size:14px;color:var(--gray-700);background:white;transition:border-color .2s;outline:none;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue);}
+.field textarea{resize:vertical;min-height:70px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.btn{width:100%;padding:12px;border:none;border-radius:var(--radius-sm);font-family:var(--font);font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-primary{background:var(--blue);color:white;}
+.btn-primary:hover{background:var(--blue-dark);}
+.btn-primary:disabled{background:var(--gray-400);cursor:not-allowed;}
+.btn-danger{background:var(--red-light);color:var(--red);}
+.btn-success{background:var(--green-light);color:var(--green);}
+.btn-sm{width:auto;padding:6px 14px;font-size:13px;}
+.error-msg{background:var(--red-light);color:var(--red);padding:10px 12px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:14px;}
+.success-msg{background:var(--green-light);color:var(--green);padding:10px 12px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:14px;}
+.biz-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+.biz-card{border:2px solid var(--gray-200);border-radius:var(--radius-sm);padding:12px 8px;text-align:center;cursor:pointer;transition:all .2s;}
+.biz-card:hover{border-color:var(--blue);background:var(--blue-light);}
+.biz-card.selected{border-color:var(--blue);background:var(--blue-light);}
+.biz-card .icon{font-size:24px;margin-bottom:4px;}
+.biz-card .label{font-size:11px;font-weight:600;color:var(--gray-700);}
+.app{display:none;min-height:100vh;}
+.app.visible{display:flex;flex-direction:column;}
+.topbar{background:var(--blue);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.topbar-logo{font-size:18px;font-weight:700;color:white;}
+.topbar-logo span{color:var(--yellow);}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.user-badge{background:rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:12px;color:white;}
+.admin-badge{background:var(--yellow);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--gray-700);}
+.biz-badge{background:rgba(255,255,255,.2);border-radius:20px;padding:4px 12px;font-size:11px;color:white;}
+.logout-btn{background:rgba(255,255,255,.15);border:none;border-radius:20px;padding:6px 14px;font-family:var(--font);font-size:12px;color:white;cursor:pointer;}
+.sidebar{width:220px;background:white;border-right:1px solid var(--gray-200);padding:20px 12px;flex-shrink:0;min-height:calc(100vh - 56px);}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);font-size:14px;font-weight:500;color:var(--gray-500);cursor:pointer;margin-bottom:4px;transition:all .2s;border:none;background:transparent;width:100%;text-align:left;font-family:var(--font);}
+.nav-item:hover{background:var(--gray-100);color:var(--gray-700);}
+.nav-item.active{background:var(--blue-light);color:var(--blue);}
+.nav-section{font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;padding:16px 12px 6px;}
+.main{flex:1;padding:28px;overflow-y:auto;}
+.page{display:none;}
+.page.active{display:block;}
+.page-title{font-size:22px;font-weight:700;margin-bottom:6px;}
+.page-sub{font-size:14px;color:var(--gray-500);margin-bottom:28px;}
+.card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:20px;}
+.card-title{font-size:15px;font-weight:600;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--gray-200);}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px;margin-bottom:24px;}
+.stat-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;}
+.stat-label{font-size:12px;color:var(--gray-500);margin-bottom:8px;}
+.stat-value{font-size:28px;font-weight:700;color:var(--gray-700);}
+.stat-value.blue{color:var(--blue);}
+.stat-value.green{color:var(--green);}
+.stat-value.orange{color:var(--orange);}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:10px 12px;background:var(--gray-100);color:var(--gray-500);font-weight:600;font-size:11px;text-transform:uppercase;}
+td{padding:12px;border-bottom:1px solid var(--gray-200);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--gray-50);}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-pending{background:var(--orange-light);color:var(--orange);}
+.badge-approved{background:var(--green-light);color:var(--green);}
+.badge-rejected{background:var(--red-light);color:var(--red);}
+.form-section{margin-bottom:24px;}
+.form-section-title{font-size:13px;font-weight:700;color:var(--blue);margin-bottom:14px;padding:8px 12px;background:var(--blue-light);border-radius:var(--radius-sm);}
+.check-group{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;}
+.check-item{display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:white;border-radius:var(--radius);max-width:680px;width:100%;max-height:85vh;overflow-y:auto;}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:white;}
+.modal-header h3{font-size:16px;font-weight:700;}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray-500);}
+.modal-body{padding:24px;}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--gray-200);display:flex;gap:12px;justify-content:flex-end;}
+.action-row{display:flex;gap:8px;}
+.btn-icon{padding:6px 10px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:600;font-family:var(--font);transition:all .2s;}
+.btn-approve{background:var(--green-light);color:var(--green);}
+.btn-reject{background:var(--red-light);color:var(--red);}
+.btn-view{background:var(--blue-light);color:var(--blue);}
+.info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--gray-200);font-size:13px;}
+.info-row:last-child{border-bottom:none;}
+.info-label{color:var(--gray-500);}
+.flex-between{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.loading{text-align:center;padding:40px;color:var(--gray-500);font-size:14px;}
+.skeleton{background:linear-gradient(90deg,var(--gray-100) 25%,var(--gray-200) 50%,var(--gray-100) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:8px;height:60px;margin-bottom:8px;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.spinner{display:inline-block;width:24px;height:24px;border:3px solid var(--gray-200);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.empty-state{text-align:center;padding:48px 20px;color:var(--gray-500);}
+.empty-icon{font-size:48px;margin-bottom:12px;}
+.step-indicator{display:flex;align-items:center;gap:8px;margin-bottom:20px;}
+.step{display:flex;align-items:center;gap:6px;font-size:12px;}
+.step-dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+.step-dot.done{background:var(--blue);color:white;}
+.step-dot.current{background:var(--yellow);color:var(--gray-700);}
+.step-dot.upcoming{background:var(--gray-200);color:var(--gray-500);}
+.step-line{flex:1;height:1px;background:var(--gray-200);}
+@media(max-width:768px){.two-col{grid-template-columns:1fr;}.sidebar{display:none;}.biz-grid{grid-template-columns:repeat(2,1fr);}}
+.map-filter-btn{padding:5px 12px;border:1.5px solid var(--gray-200);border-radius:20px;background:white;font-family:var(--font);font-size:11px;font-weight:600;color:var(--gray-500);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.map-filter-btn:hover{border-color:var(--blue);color:var(--blue);}
+.map-filter-btn.active{background:var(--blue);color:white;border-color:var(--blue);}
+.leaflet-container{font-family:var(--font)!important;}
+</style>
+<style>
+  /* signup page: give the form more room than the 440px login card */
+  .auth-card{max-width:560px;}
+  .signup-note{font-size:12px;color:var(--gray-500);text-align:center;margin-top:18px;}
+  .signup-note a{color:var(--blue);font-weight:600;text-decoration:none;}
+  #successPanel{text-align:center;padding:12px 4px;}
+  #successPanel .big{font-size:44px;margin-bottom:10px;}
+  #successPanel h2{font-size:20px;font-weight:700;margin-bottom:8px;}
+  #successPanel p{font-size:14px;color:var(--gray-500);margin-bottom:20px;}
+</style>
+</head>
+<body>
+<div class="auth-screen">
+  <div class="auth-logo"><span>Pippo<span class="go">GO!</span></span></div>
+
+  <div class="auth-card" id="signupCard">
+    <h2>สมัครเป็นผู้ประกอบการ</h2>
+    <p>ลงทะเบียนสถานที่ของคุณเข้าสู่แอป PippoGO — ทีมงานจะตรวจสอบและอนุมัติภายใน 24 ชม.</p>
+
+    <div id="registerForm">
+      <div class="step-indicator">
+        <div class="step"><div class="step-dot current" id="regStep1dot">1</div><span>ประเภทธุรกิจ</span></div>
+        <div class="step-line"></div>
+        <div class="step"><div class="step-dot upcoming" id="regStep2dot">2</div><span>ข้อมูลธุรกิจ</span></div>
+        <div class="step-line"></div>
+        <div class="step"><div class="step-dot upcoming" id="regStep3dot">3</div><span>บัญชี</span></div>
+      </div>
+      <div id="regStep1">
+        <p style="font-size:13px;color:var(--gray-500);margin-bottom:14px">เลือกประเภทธุรกิจของคุณ</p>
+        <div class="biz-grid">
+          <div class="biz-card" onclick="selectBizType('hotel')" id="biz-hotel" style="grid-column:span 3"><div class="icon">🏨</div><div class="label">โรงแรม</div></div>
+          <div class="biz-card" onclick="selectBizType('cafe')" id="biz-cafe"><div class="icon">🍽️</div><div class="label">ร้านอาหาร/คาเฟ่</div></div>
+          <div class="biz-card" onclick="selectBizType('mall')" id="biz-mall"><div class="icon">🏬</div><div class="label">ห้างสรรพสินค้า</div></div>
+          <div class="biz-card" onclick="selectBizType('attraction')" id="biz-attraction"><div class="icon">🌳</div><div class="label">สถานที่ท่องเที่ยว</div></div>
+          <div class="biz-card" onclick="selectBizType('vet')" id="biz-vet"><div class="icon">🏥</div><div class="label">โรงพยาบาลสัตว์</div></div>
+          <div class="biz-card" onclick="selectBizType('petshop')" id="biz-petshop"><div class="icon">🛍️</div><div class="label">Pet Shop</div></div>
+          <div class="biz-card" onclick="selectBizType('grooming')" id="biz-grooming"><div class="icon">✂️</div><div class="label">Grooming</div></div>
+          <div class="biz-card" onclick="selectBizType('boarding')" id="biz-boarding"><div class="icon">🏡</div><div class="label">รับฝากสัตว์เลี้ยง</div></div>
+        </div>
+        <div id="regStep1Error" class="error-msg" style="display:none">กรุณาเลือกประเภทธุรกิจ</div>
+        <button class="btn btn-primary" onclick="goRegStep(2)">ถัดไป →</button>
+      </div>
+      <div id="regStep2" style="display:none">
+        <div id="regBizForm"></div>
+        <div style="display:flex;gap:10px;margin-top:16px">
+          <button class="btn" style="background:var(--gray-100);color:var(--gray-700)" onclick="goRegStep(1)">← ย้อนกลับ</button>
+          <button class="btn btn-primary" onclick="goRegStep(3)">ถัดไป →</button>
+        </div>
+      </div>
+      <div id="regStep3" style="display:none">
+        <div id="regAccountError" class="error-msg" style="display:none"></div>
+        <div style="background:var(--blue-light);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--blue)">👤 ข้อมูลสำหรับ Admin ติดต่อกลับ</div>
+        <div class="field"><label>ชื่อคนติดต่อ</label><input type="text" id="regContactName" placeholder="ชื่อ-นามสกุลผู้ประกอบการ"></div>
+        <div class="field-row">
+          <div class="field"><label>เบอร์โทร *</label><input type="tel" id="regContactPhone" placeholder="0812345678"></div>
+          <div class="field"><label>อีเมล์ติดต่อ *</label><input type="email" id="regContactEmail" placeholder="contact@business.com"></div>
+        </div>
+        <div style="border-top:1px solid var(--gray-200);margin:14px 0;padding-top:14px;font-size:12px;color:var(--gray-500)">🔐 บัญชี Login</div>
+        <div class="field"><label>อีเมล Login *</label><input type="email" id="regEmail" placeholder="your@email.com"></div>
+        <div class="field"><label>รหัสผ่าน * (อย่างน้อย 8 ตัว)</label><input type="password" id="regPass"></div>
+        <div class="field"><label>ยืนยันรหัสผ่าน *</label><input type="password" id="regPass2"></div>
+        <div style="display:flex;gap:10px">
+          <button class="btn" style="background:var(--gray-100);color:var(--gray-700)" onclick="goRegStep(2)">← ย้อนกลับ</button>
+          <button class="btn btn-primary" id="regSubmitBtn" onclick="handleRegister()">สมัครและรอ Approve</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="successPanel" style="display:none">
+      <div class="big">✅</div>
+      <h2>สมัครสำเร็จ!</h2>
+      <p>ทีมงาน PippoGO จะตรวจสอบและอนุมัติสถานที่ของคุณภายใน 24 ชม.<br>เมื่ออนุมัติแล้ว คุณจะเข้าจัดการข้อมูลร้านได้ที่ Partner Portal</p>
+      <a class="btn btn-primary" href="partner" style="display:inline-block;text-decoration:none">ไปที่ Partner Portal →</a>
+    </div>
+
+    <div class="signup-note">เป็นผู้ประกอบการอยู่แล้ว? <a href="partner">เข้าสู่ระบบ Partner Portal</a></div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyD88Om-vKnpvX2RUSVifrSH_EA0gBcrHOA",
+  authDomain: "pippo-go.firebaseapp.com",
+  projectId: "pippo-go",
+  storageBucket: "pippo-go.firebasestorage.app",
+  messagingSenderId: "828784788403",
+  appId: "1:828784788403:web:2445bfb05c0f60678c41c6"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+/* ===== biztypes ===== */
+const BIZ_TYPES = {
+  hotel:{label:'🏨 โรงแรม',cat:'hotel',hasRooms:true},
+  cafe:{label:'🍽️ ร้านอาหาร/คาเฟ่',cat:'cafe',hasRooms:false},
+  mall:{label:'🏬 ห้างสรรพสินค้า',cat:'mall',hasRooms:false},
+  attraction:{label:'🌳 สถานที่ท่องเที่ยว',cat:'attraction',hasRooms:false},
+  vet:{label:'🏥 โรงพยาบาลสัตว์',cat:'vet',hasRooms:false},
+  petshop:{label:'🛍️ Pet Shop',cat:'petshop',hasRooms:false},
+  grooming:{label:'✂️ Grooming',cat:'grooming',hasRooms:false},
+  boarding:{label:'🏡 รับฝากสัตว์เลี้ยง',cat:'boarding',hasRooms:false}
+};
+
+/* ===== stepfns ===== */
+let selectedBizType=null;
+function selectBizType(type){selectedBizType=type;document.querySelectorAll('.biz-card').forEach(c=>c.classList.remove('selected'));document.getElementById('biz-'+type).classList.add('selected');document.getElementById('regStep1Error').style.display='none';}
+function goRegStep(step){[1,2,3].forEach(s=>{document.getElementById('regStep'+s).style.display=s===step?'block':'none';const dot=document.getElementById('regStep'+s+'dot');dot.className='step-dot '+(s<step?'done':s===step?'current':'upcoming');});if(step===1)return;if(step===2){if(!selectedBizType){document.getElementById('regStep1Error').style.display='block';goRegStep(1);return;}document.getElementById('regBizForm').innerHTML=getBizForm(selectedBizType,{});}}
+
+/* ===== getbizform ===== */
+function getBizForm(type,d){
+  const common=`<div class="form-section"><div class="form-section-title">📍 ข้อมูลพื้นฐาน</div>
+    <div class="field-row">
+      <div class="field"><label>ชื่อสถานที่ (ภาษาไทย) *</label><input type="text" id="bNameTh" value="${d.nameThai||d.name||''}" placeholder="ชื่อสถานที่ภาษาไทย"></div>
+      <div class="field"><label>ชื่อสถานที่ (English)</label><input type="text" id="bNameEn" value="${d.nameEnglish||''}" placeholder="Place name in English"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>จังหวัด *</label>
+        <div style="position:relative">
+          <input type="text" id="bProvince" value="${d.province||''}" placeholder="พิมพ์ค้นหาจังหวัด..."
+            autocomplete="off"
+            oninput="showProvinceBox(this,'bProvince','bProvSug')"
+            onfocus="showProvinceBox(this,'bProvince','bProvSug')"
+            style="width:100%">
+          <div id="bProvSug" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1.5px solid var(--blue);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);max-height:200px;overflow-y:auto;z-index:100;box-shadow:var(--shadow)"></div>
+        </div>
+      </div>
+      <div class="field"><label>เบอร์โทรศัพท์</label><input type="tel" id="bPhone" value="${d.phone||''}" placeholder="+66812345678"></div>
+    </div>
+    <div class="field"><label>ที่อยู่</label><input type="text" id="bAddress" value="${d.address||''}" placeholder="ที่อยู่เต็ม"></div>
+    <div class="field"><label>Google Maps URL</label>
+      <div style="display:flex;gap:8px">
+        <input type="url" id="bMapUrl" value="${d.googleMapUrl||''}" placeholder="https://maps.app.goo.gl/..." oninput="tryParseLatLng()" style="flex:1">
+        <button type="button" onclick="previewOnMap()" style="padding:8px 12px;background:var(--blue);color:white;border:none;border-radius:var(--radius-sm);font-family:var(--font);font-size:12px;cursor:pointer;white-space:nowrap">🗺️ Preview</button>
+      </div>
+    </div>
+    <div style="background:var(--gray-100);padding:12px;border-radius:var(--radius-sm);margin-top:-8px">
+      <div style="font-size:12px;color:var(--gray-500);margin-bottom:8px">📍 พิกัด GPS<span style="font-size:11px;display:block;color:var(--blue)">วิธีหาพิกัด: เปิด Google Maps → คลิกขวาที่ร้าน → คัดลอกตัวเลข</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field" style="margin:0"><label>Latitude</label><input type="number" id="bLat" value="${d.latitude||''}" placeholder="13.7563" step="0.000001"></div>
+        <div class="field" style="margin:0"><label>Longitude</label><input type="number" id="bLng" value="${d.longitude||''}" placeholder="100.5018" step="0.000001"></div>
+      </div>
+      <div id="latLngStatus" style="font-size:11px;margin-top:6px;color:var(--gray-500)"></div>
+    </div>
+  </div>
+  <div class="form-section">${renderHoursSection(d)}</div>
+  <div class="form-section"><div class="form-section-title">📸 รูปภาพ <span style="font-weight:400;font-size:11px;color:var(--orange)">(ขั้นต่ำ 3 รูป)</span></div>
+    <p style="font-size:11px;color:var(--gray-500);margin-bottom:12px">วาง URL รูปภาพ กด "+ เพิ่มรูป"</p>
+    <div id="photoUrlList">${(()=>{const photos=[d.photo1||'',d.photo2||'',d.photo3||'',...(d.photos||[])].filter((v,i,a)=>v&&a.indexOf(v)===i);const rows=Math.max(3,photos.length);let html='';for(let i=0;i<rows;i++){const val=photos[i]||'';const isReq=i<3;html+=`<div class="photo-url-row" style="display:flex;gap:8px;margin-bottom:8px;align-items:center"><div style="position:relative;flex:1"><input type="url" class="photo-url-input" value="${val}" placeholder="https://... ${isReq?'(จำเป็น)':'(ไม่บังคับ)'}" oninput="previewPhoto(this)" style="width:100%;padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;outline:none">${val?`<img src="${val}" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:28px;height:28px;object-fit:cover;border-radius:4px" onerror="this.style.display='none'" class="photo-preview-thumb">`:'<span class="photo-preview-thumb" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--gray-400)">🖼️</span>'}</div>${i>=3?`<button type="button" onclick="removePhotoRow(this)" style="padding:8px;background:var(--red-light);color:var(--red);border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:14px">✕</button>`:'<div style="width:32px"></div>'}</div>`;}return html;})()}</div>
+    <button type="button" onclick="addPhotoRow()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--blue-light);color:var(--blue);border:none;border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;margin-top:4px">+ เพิ่มรูปภาพ</button>
+    <div id="photoValidationMsg" style="font-size:11px;color:var(--red);margin-top:6px;display:none">⚠️ กรุณาใส่ URL รูปภาพอย่างน้อย 3 รูป</div>
+  </div>`;
+
+  const typeExtra={
+    hotel:`<div class="form-section"><div class="form-section-title">🐾 นโยบายสัตว์เลี้ยง</div>
+      <div class="field-row">
+        <div class="field"><label>รับสัตว์เลี้ยง</label><select id="bPetTypes"><option value="dog,cat" ${d.allowedPetTypes==='dog,cat'?'selected':''}>สุนัขและแมว</option><option value="dog" ${d.allowedPetTypes==='dog'?'selected':''}>สุนัขเท่านั้น</option><option value="cat" ${d.allowedPetTypes==='cat'?'selected':''}>แมวเท่านั้น</option></select></div>
+        <div class="field"><label>น้ำหนักสูงสุด (กก.)</label><input type="number" id="bMaxWeight" value="${d.maxPetWeight||0}" min="0"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>จำนวนสัตว์สูงสุด/ห้อง</label><input type="number" id="bMaxPets" value="${d.maxPetCount||2}" min="1"></div>
+        <div class="field"><label>ค่าสัตว์ (฿/ตัว/คืน)</label><input type="number" id="bPetFee" value="${d.petFeePerNight||0}" min="0"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>มัดจำสัตว์ (฿)</label><input type="number" id="bPetDeposit" value="${d.petDeposit||0}" min="0"></div>
+        <div class="field"><label>Check-in / Check-out</label><div style="display:flex;gap:8px;align-items:center"><input type="time" id="bCheckIn" value="${d.checkInTime||'14:00'}" style="flex:1"><span style="font-size:12px;color:var(--gray-500)">→</span><input type="time" id="bCheckOut" value="${d.checkOutTime||'12:00'}" style="flex:1"></div></div>
+      </div>
+      <div class="field"><label>นโยบายยกเลิก</label><input type="text" id="bCancel" value="${d.cancellationPolicy||''}" placeholder="ยกเลิกฟรีก่อน 7 วัน"></div>
+    </div>
+    <div class="form-section"><div class="form-section-title">✨ สิ่งอำนวยความสะดวก</div>
+      <div class="check-group">${['pool:🏊 สระว่ายน้ำ','breakfast:🍳 อาหารเช้า','wifi:📶 WiFi ฟรี','parking:🚗 ที่จอดรถ','pet_area:🐾 พื้นที่สัตว์','garden:🌿 สวน','pet_shower:🚿 อาบน้ำสัตว์','pet_bed:🛏 ที่นอนสัตว์','private_beach:🏖 ชายหาด','bbq:🔥 BBQ'].map(a=>{const[v,l]=a.split(':');const checked=(d.amenities||'').includes(v)?'checked':'';return`<label class="check-item"><input type="checkbox" value="${v}" class="amenity-cb" ${checked}> ${l}</label>`;}).join('')}</div>
+    </div>`,
+    cafe:`<div class="form-section"><div class="form-section-title">🐾 นโยบายสัตว์เลี้ยง</div>
+      <div class="field"><label>สัตว์เข้าได้ที่ไหน</label><select id="bIndoorOutdoor"><option value="outdoor_only" ${d.indoorOutdoor==='outdoor_only'?'selected':''}>ข้างนอกเท่านั้น</option><option value="indoor" ${d.indoorOutdoor==='indoor'?'selected':''}>ในร้านได้</option><option value="both" ${d.indoorOutdoor==='both'?'selected':''}>ทั้งในและนอกร้าน</option></select></div>
+      <div class="field"><label>เงื่อนไขสัตว์เลี้ยง</label><div class="check-group" style="margin-top:8px"><label class="check-item"><input type="checkbox" id="cLeash" ${(Array.isArray(d.petPolicy)?d.petPolicy.join(','):d.petPolicy||'').includes('leash')?'checked':''}> 🐕 ต้องอยู่ในสายจูง</label><label class="check-item"><input type="checkbox" id="cStroller" ${(Array.isArray(d.petPolicy)?d.petPolicy.join(','):d.petPolicy||'').includes('stroller')?'checked':''}> 🛒 ต้องอยู่ในรถเข็น</label><label class="check-item"><input type="checkbox" id="cAllPets" ${(Array.isArray(d.petPolicy)?d.petPolicy.join(','):d.petPolicy||'').includes('allpets')?'checked':''}> 🐾 รับทุกประเภท</label><label class="check-item"><input type="checkbox" id="cDogOnly" ${(Array.isArray(d.petPolicy)?d.petPolicy.join(','):d.petPolicy||'').includes('dogonly')?'checked':''}> 🐕 สุนัขเท่านั้น</label></div></div>
+      <div class="field"><label>รายละเอียดเพิ่มเติม</label><textarea id="bPetDetail" placeholder="เช่น สุนัขขนาดเล็กเท่านั้น">${d.petDetail||''}</textarea></div>
+    </div>
+    <div class="form-section"><div class="form-section-title">🍽️ ประเภทร้าน</div>
+      <div class="field"><label>ประเภท</label><select id="bSubType"><option value="restaurant" ${d.subType==='restaurant'?'selected':''}>ร้านอาหาร</option><option value="cafe" ${d.subType==='cafe'?'selected':''}>คาเฟ่</option><option value="bakery" ${d.subType==='bakery'?'selected':''}>เบเกอรี่</option><option value="bar" ${d.subType==='bar'?'selected':''}>บาร์/Pub</option></select></div>
+      <div class="field"><label>คำอธิบายร้าน</label><textarea id="bDesc" placeholder="บรรยากาศร้าน...">${d.description||''}</textarea></div>
+    </div>`,
+    mall:`<div class="form-section"><div class="form-section-title">🐾 สิ่งอำนวยความสะดวกสำหรับสัตว์เลี้ยง</div>
+      <div class="check-group"><label class="check-item"><input type="checkbox" id="mStroller" ${(d.petFacilities||'').includes('stroller')?'checked':''}> 🛒 รถเข็นสัตว์ให้ยืม</label><label class="check-item"><input type="checkbox" id="mArea" ${(d.petFacilities||'').includes('area')?'checked':''}> 🌿 พื้นที่พักสัตว์</label><label class="check-item"><input type="checkbox" id="mGrooming" ${(d.petFacilities||'').includes('grooming')?'checked':''}> ✂️ ร้านตัดขน</label><label class="check-item"><input type="checkbox" id="mPetShop" ${(d.petFacilities||'').includes('petshop')?'checked':''}> 🛍️ Pet Shop</label><label class="check-item"><input type="checkbox" id="mVet" ${(d.petFacilities||'').includes('vet')?'checked':''}> 🏥 คลินิกสัตว์</label><label class="check-item"><input type="checkbox" id="mPark" ${(d.petFacilities||'').includes('park')?'checked':''}> 🌳 สวน</label></div>
+      <div class="field" style="margin-top:12px"><label>รายละเอียด</label><textarea id="bDesc" placeholder="บรรยายสิ่งพิเศษ...">${d.description||''}</textarea></div>
+      <div class="field"><label>นโยบายสัตว์เลี้ยง</label><input type="text" id="bPetPolicy" value="${d.petPolicy||''}" placeholder="เช่น ต้องอยู่ในรถเข็น"></div>
+    </div>`,
+    attraction:`<div class="form-section"><div class="form-section-title">🌳 ข้อมูลสถานที่</div>
+      <div class="field"><label>ประเภทสถานที่</label><select id="bSubType"><option value="park">อุทยาน/สวนสาธารณะ</option><option value="beach">ชายหาด</option><option value="mountain">ภูเขา</option><option value="temple">วัด</option><option value="market">ตลาด</option><option value="other">อื่นๆ</option></select></div>
+      <div class="field"><label>นโยบายสัตว์เลี้ยง</label><textarea id="bPetPolicy" placeholder="อนุญาตให้นำสัตว์เลี้ยงเข้าได้...">${d.petPolicy||''}</textarea></div>
+      <div class="field"><label>ค่าเข้า</label><input type="text" id="bEntryFee" value="${d.entryFee||''}" placeholder="ฟรี / ผู้ใหญ่ 100฿"></div>
+      <div class="field"><label>คำอธิบาย</label><textarea id="bDesc" placeholder="บรรยายความสวยงาม...">${d.description||''}</textarea></div>
+    </div>`,
+    vet:`<div class="form-section"><div class="form-section-title">🏥 บริการ</div>
+      <div class="check-group"><label class="check-item"><input type="checkbox" id="v24h" ${(d.services||'').includes('24h')?'checked':''}> 🕐 เปิด 24 ชม.</label><label class="check-item"><input type="checkbox" id="vEmergency" ${(d.services||'').includes('emergency')?'checked':''}> 🚨 ฉุกเฉิน</label><label class="check-item"><input type="checkbox" id="vSurgery" ${(d.services||'').includes('surgery')?'checked':''}> ⚕️ ผ่าตัด</label><label class="check-item"><input type="checkbox" id="vXray" ${(d.services||'').includes('xray')?'checked':''}> 🔬 X-Ray</label><label class="check-item"><input type="checkbox" id="vGrooming" ${(d.services||'').includes('grooming')?'checked':''}> ✂️ อาบน้ำ</label><label class="check-item"><input type="checkbox" id="vBoarding" ${(d.services||'').includes('boarding')?'checked':''}> 🏡 รับฝาก</label></div>
+      <div class="field" style="margin-top:12px"><label>รับรักษาสัตว์</label><input type="text" id="bPetTypes" value="${d.petTypes||''}" placeholder="สุนัข แมว กระต่าย"></div>
+      <div class="field"><label>คำอธิบาย</label><textarea id="bDesc" placeholder="ทีมสัตวแพทย์ผู้เชี่ยวชาญ...">${d.description||''}</textarea></div>
+    </div>`,
+    petshop:`<div class="form-section"><div class="form-section-title">🛍️ สินค้าและบริการ</div>
+      <div class="check-group"><label class="check-item"><input type="checkbox" id="psFood" ${(Array.isArray(d.products)?d.products.join(','):d.products||'').includes('food')?'checked':''}> 🍖 อาหารสัตว์</label><label class="check-item"><input type="checkbox" id="psAccessory" ${(Array.isArray(d.products)?d.products.join(','):d.products||'').includes('accessory')?'checked':''}> 🎀 อุปกรณ์</label><label class="check-item"><input type="checkbox" id="psToy" ${(Array.isArray(d.products)?d.products.join(','):d.products||'').includes('toy')?'checked':''}> 🎾 ของเล่น</label><label class="check-item"><input type="checkbox" id="psGrooming" ${(Array.isArray(d.products)?d.products.join(','):d.products||'').includes('grooming')?'checked':''}> ✂️ อาบน้ำ</label><label class="check-item"><input type="checkbox" id="psMedicine" ${(Array.isArray(d.products)?d.products.join(','):d.products||'').includes('medicine')?'checked':''}> 💊 ยา</label><label class="check-item"><input type="checkbox" id="psLive" ${(Array.isArray(d.products)?d.products.join(','):d.products||'').includes('live')?'checked':''}> 🐹 สัตว์มีชีวิต</label></div>
+      <div class="field" style="margin-top:12px"><label>คำอธิบาย</label><textarea id="bDesc" placeholder="สินค้าคุณภาพ...">${d.description||''}</textarea></div>
+    </div>`,
+    grooming:`<div class="form-section"><div class="form-section-title">✂️ บริการ Grooming</div>
+      <div class="check-group"><label class="check-item"><input type="checkbox" id="grBath" ${(Array.isArray(d.services)?d.services.join(','):d.services||'').includes('bath')?'checked':''}> 🚿 อาบน้ำ</label><label class="check-item"><input type="checkbox" id="grCut" ${(Array.isArray(d.services)?d.services.join(','):d.services||'').includes('cut')?'checked':''}> ✂️ ตัดขน</label><label class="check-item"><input type="checkbox" id="grSpa" ${(Array.isArray(d.services)?d.services.join(','):d.services||'').includes('spa')?'checked':''}> 🛁 สปา</label><label class="check-item"><input type="checkbox" id="grNail" ${(Array.isArray(d.services)?d.services.join(','):d.services||'').includes('nail')?'checked':''}> 💅 ตัดเล็บ</label><label class="check-item"><input type="checkbox" id="grTeeth" ${(Array.isArray(d.services)?d.services.join(','):d.services||'').includes('teeth')?'checked':''}> 🦷 ขูดหินปูน</label><label class="check-item"><input type="checkbox" id="grMobile" ${(Array.isArray(d.services)?d.services.join(','):d.services||'').includes('mobile')?'checked':''}> 🚗 บริการถึงบ้าน</label></div>
+      <div class="field" style="margin-top:12px"><label>รับสัตว์ประเภท</label><input type="text" id="bPetTypes" value="${d.petTypes||''}" placeholder="สุนัข แมว"></div>
+      <div class="field-row">
+        <div class="field"><label>ราคาเริ่มต้น (฿)</label><input type="number" id="bPriceMin" value="${d.priceMin||0}" min="0"></div>
+        <div class="field"><label>ราคาสูงสุด (฿)</label><input type="number" id="bPriceMax" value="${d.priceMax||0}" min="0"></div>
+      </div>
+      <div class="field"><label>คำอธิบาย</label><textarea id="bDesc" placeholder="ช่างผู้เชี่ยวชาญ...">${d.description||''}</textarea></div>
+    </div>`,
+    boarding:`<div class="form-section"><div class="form-section-title">🏡 บริการรับฝาก</div>
+      <div class="field"><label>รับสัตว์ประเภท</label><input type="text" id="bPetTypes" value="${d.petTypes||''}" placeholder="สุนัข แมว"></div>
+      <div class="field-row">
+        <div class="field"><label>ราคาเริ่มต้น (฿/คืน)</label><input type="number" id="bPriceMin" value="${d.priceMin||0}" min="0"></div>
+        <div class="field"><label>ราคาสูงสุด (฿/คืน)</label><input type="number" id="bPriceMax" value="${d.priceMax||0}" min="0"></div>
+      </div>
+      <div class="field"><label>จุดเด่น</label><textarea id="bHighlight" placeholder="มีกล้อง CCTV...">${d.highlight||''}</textarea></div>
+      <div class="check-group"><label class="check-item"><input type="checkbox" id="bdCCTV" ${(d.facilities||'').includes('cctv')?'checked':''}> 📷 CCTV</label><label class="check-item"><input type="checkbox" id="bdVet" ${(d.facilities||'').includes('vet')?'checked':''}> 🏥 สัตวแพทย์</label><label class="check-item"><input type="checkbox" id="bdUpdate" ${(d.facilities||'').includes('update')?'checked':''}> 📱 อัปเดตรูป</label><label class="check-item"><input type="checkbox" id="bdPlay" ${(d.facilities||'').includes('play')?'checked':''}> 🌿 พื้นที่เล่น</label><label class="check-item"><input type="checkbox" id="bdAC" ${(d.facilities||'').includes('ac')?'checked':''}> ❄️ แอร์</label><label class="check-item"><input type="checkbox" id="bdPickup" ${(d.facilities||'').includes('pickup')?'checked':''}> 🚗 รับส่ง</label></div>
+      <div class="field" style="margin-top:12px"><label>คำอธิบาย</label><textarea id="bDesc" placeholder="บรรยายสภาพแวดล้อม...">${d.description||''}</textarea></div>
+    </div>`
+  };
+  return common+(typeExtra[type]||'');
+}
+
+
+/* ===== collect ===== */
+function collectBizFormData(type){
+  const g=id=>{const el=document.getElementById(id);return el?el.value:''};
+  const gc=ids=>ids.filter(id=>{const el=document.getElementById(id);return el&&el.checked});
+  const latVal=parseFloat(g('bLat'))||0,lngVal=parseFloat(g('bLng'))||0;
+  const base={name:g('bNameTh')||g('bNameEn'),nameThai:g('bNameTh'),nameEnglish:g('bNameEn'),province:g('bProvince'),phone:g('bPhone'),address:g('bAddress'),googleMapUrl:g('bMapUrl'),latitude:latVal,longitude:lngVal,defaultOpenTime:g('bDefaultOpen')||'09:00',defaultCloseTime:g('bDefaultClose')||'21:00',openNote:g('bOpenNote'),hours:(function(){var hh={};['mon','tue','wed','thu','fri','sat','sun'].forEach(function(k){var cb=document.getElementById('open-'+k);hh[k]={open:cb?cb.checked:true,openTime:document.getElementById('open-t-'+k)?.value||'09:00',closeTime:document.getElementById('close-t-'+k)?.value||'21:00'};});return hh;})(),photo1:getPhotoUrls()[0]||'',photo2:getPhotoUrls()[1]||'',photo3:getPhotoUrls()[2]||'',photos:getPhotoUrls(),category:BIZ_TYPES[type].cat};
+  const extras={
+    hotel:()=>({allowedPetTypes:g('bPetTypes'),maxPetWeight:g('bMaxWeight'),maxPetCount:g('bMaxPets'),petFeePerNight:g('bPetFee'),petDeposit:g('bPetDeposit'),checkInTime:g('bCheckIn'),checkOutTime:g('bCheckOut'),cancellationPolicy:g('bCancel'),amenities:Array.from(document.querySelectorAll('.amenity-cb:checked')).map(c=>c.value).join(','),extraGuestFeePerNight:'500',baseGuests:'2'}),
+    cafe:()=>({indoorOutdoor:g('bIndoorOutdoor'),subType:g('bSubType'),description:g('bDesc'),petPolicy:gc(['cLeash','cStroller','cAllPets','cDogOnly']).join(','),petDetail:g('bPetDetail')}),
+    mall:()=>({description:g('bDesc'),petPolicy:g('bPetPolicy'),petFacilities:gc(['mStroller','mArea','mGrooming','mPetShop','mVet','mPark']).map(id=>id.replace('m','')).join(',')}),
+    attraction:()=>({subType:g('bSubType'),petPolicy:g('bPetPolicy'),entryFee:g('bEntryFee'),description:g('bDesc')}),
+    vet:()=>({description:g('bDesc'),petTypes:g('bPetTypes'),services:gc(['v24h','vEmergency','vSurgery','vXray','vGrooming','vBoarding']).join(',')}),
+    petshop:()=>({description:g('bDesc'),products:gc(['psFood','psAccessory','psToy','psGrooming','psMedicine','psLive']).join(',')}),
+    grooming:()=>({description:g('bDesc'),petTypes:g('bPetTypes'),priceMin:g('bPriceMin'),priceMax:g('bPriceMax'),services:gc(['grBath','grCut','grSpa','grNail','grTeeth','grMobile']).join(',')}),
+    boarding:()=>({petTypes:g('bPetTypes'),priceMin:g('bPriceMin'),priceMax:g('bPriceMax'),highlight:g('bHighlight'),description:g('bDesc'),facilities:gc(['bdCCTV','bdVet','bdUpdate','bdPlay','bdAC','bdPickup']).join(',')})
+  };
+  return{...base,...(extras[type]?extras[type]():{})};
+}
+
+
+/* ===== photos ===== */
+function addPhotoRow(){const list=document.getElementById('photoUrlList');if(!list)return;const div=document.createElement('div');div.className='photo-url-row';div.style.cssText='display:flex;gap:8px;margin-bottom:8px;align-items:center';div.innerHTML=`<div style="position:relative;flex:1"><input type="url" class="photo-url-input" placeholder="https://... (ไม่บังคับ)" oninput="previewPhoto(this)" style="width:100%;padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;outline:none"><span class="photo-preview-thumb" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--gray-400)">🖼️</span></div><button type="button" onclick="removePhotoRow(this)" style="padding:8px;background:var(--red-light);color:var(--red);border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:14px">✕</button>`;list.appendChild(div);}
+function removePhotoRow(btn){btn.closest('.photo-url-row').remove();}
+function previewPhoto(input){const thumb=input.parentElement.querySelector('.photo-preview-thumb');if(!thumb)return;const url=input.value.trim();if(url){if(thumb.tagName==='IMG'){thumb.src=url;thumb.style.display='';}else{const img=document.createElement('img');img.src=url;img.style.cssText='position:absolute;right:8px;top:50%;transform:translateY(-50%);width:28px;height:28px;object-fit:cover;border-radius:4px;border:1px solid var(--gray-200)';img.className='photo-preview-thumb';img.onerror=()=>img.style.display='none';thumb.replaceWith(img);}}}
+function getPhotoUrls(){const inputs=document.querySelectorAll('#photoUrlList .photo-url-input');return Array.from(inputs).map(i=>i.value.trim()).filter(Boolean);}
+function validatePhotos(){const photos=getPhotoUrls();const msgEl=document.getElementById('photoValidationMsg');if(photos.length<3){if(msgEl)msgEl.style.display='block';return false;}if(msgEl)msgEl.style.display='none';return true;}
+
+/* ===== hours ===== */
+function renderHoursSection(d){
+  var days=[['mon','จันทร์'],['tue','อังคาร'],['wed','พุธ'],['thu','พฤหัสฯ'],['fri','ศุกร์'],['sat','เสาร์'],['sun','อาทิตย์']];
+  var defOpen=d.defaultOpenTime||'09:00';
+  var defClose=d.defaultCloseTime||'21:00';
+  var rows=days.map(function(item){
+    var key=item[0];var label=item[1];
+    var day=(d.hours&&d.hours[key])||{};
+    var isOpen=day.open!==false;
+    var ot=day.openTime||defOpen;
+    var ct=day.closeTime||defClose;
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--gray-200)">'
+      +'<label style="display:flex;align-items:center;gap:8px;min-width:95px;cursor:pointer;font-size:13px;font-weight:600">'
+      +'<input type="checkbox" class="day-cb" data-day="'+key+'" id="open-'+key+'" '+(isOpen?'checked':'')+' style="width:16px;height:16px;cursor:pointer"> '+label
+      +'</label>'
+      +'<div id="time-'+key+'" style="display:flex;align-items:center;gap:6px;flex:1;'+(isOpen?'':'opacity:.3;pointer-events:none;')+'">'
+      +'<input type="time" id="open-t-'+key+'" value="'+ot+'" style="padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:var(--font);font-size:13px;outline:none;flex:1">'
+      +'<span style="color:var(--gray-500);font-size:13px">–</span>'
+      +'<input type="time" id="close-t-'+key+'" value="'+ct+'" style="padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:var(--font);font-size:13px;outline:none;flex:1">'
+      +'</div>'
+      +'<div id="closed-'+key+'" style="display:'+(isOpen?'none':'flex')+'">'
+      +'<span style="font-size:11px;color:var(--red);font-weight:600;background:var(--red-light);padding:3px 10px;border-radius:20px">ปิด</span>'
+      +'</div></div>';
+  }).join('');
+  return '<div class="form-section-title">⏰ เวลาเปิด-ปิด</div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'
+    +'<button type="button" data-preset="everyday" class="preset-btn" style="padding:5px 13px;border:1.5px solid var(--blue);border-radius:20px;background:var(--blue-light);color:var(--blue);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer">📅 เปิดทุกวัน</button>'
+    +'<button type="button" data-preset="weekday" class="preset-btn" style="padding:5px 13px;border:1.5px solid var(--gray-200);border-radius:20px;background:white;color:var(--gray-700);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer">💼 จันทร์–ศุกร์</button>'
+    +'<button type="button" data-preset="weekend" class="preset-btn" style="padding:5px 13px;border:1.5px solid var(--gray-200);border-radius:20px;background:white;color:var(--gray-700);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer">🎉 เสาร์–อาทิตย์</button>'
+    +'<button type="button" data-preset="except_mon" class="preset-btn" style="padding:5px 13px;border:1.5px solid var(--gray-200);border-radius:20px;background:white;color:var(--gray-700);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer">🚫 ปิดวันจันทร์</button>'
+    +'</div>'
+    +'<div class="field-row" style="margin-bottom:10px">'
+    +'<div class="field" style="margin:0"><label>เวลาเปิด (default)</label><input type="time" id="bDefaultOpen" value="'+defOpen+'" onchange="syncDefaultTime()"></div>'
+    +'<div class="field" style="margin:0"><label>เวลาปิด (default)</label><input type="time" id="bDefaultClose" value="'+defClose+'" onchange="syncDefaultTime()"></div>'
+    +'</div>'
+    +'<div style="border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);overflow:hidden;margin-bottom:10px">'+rows+'</div>'
+    +'<div class="field"><label>หมายเหตุเพิ่มเติม</label><input type="text" id="bOpenNote" value="'+(d.openNote||'')+'" placeholder="เช่น ปิดวันหยุดนักขัตฤกษ์ / Last order 20:30"></div>';
+}
+
+function toggleDayHours(cb,day){
+  var timeDiv=document.getElementById('time-'+day);
+  var closedDiv=document.getElementById('closed-'+day);
+  if(!timeDiv||!closedDiv)return;
+  if(cb.checked){timeDiv.style.opacity='1';timeDiv.style.pointerEvents='auto';closedDiv.style.display='none';}
+  else{timeDiv.style.opacity='.3';timeDiv.style.pointerEvents='none';closedDiv.style.display='flex';}
+}
+
+function syncDefaultTime(){
+  var ot=document.getElementById('bDefaultOpen')?.value||'09:00';
+  var ct=document.getElementById('bDefaultClose')?.value||'21:00';
+  ['mon','tue','wed','thu','fri','sat','sun'].forEach(function(k){
+    var cb=document.getElementById('open-'+k);
+    if(cb&&cb.checked){
+      var el=document.getElementById('open-t-'+k);if(el)el.value=ot;
+      el=document.getElementById('close-t-'+k);if(el)el.value=ct;
+    }
+  });
+}
+
+function applyHoursPreset(preset){
+  var days=['mon','tue','wed','thu','fri','sat','sun'];
+  var weekdays=['mon','tue','wed','thu','fri'];
+  var weekend=['sat','sun'];
+  function setDay(k,isOpen){var cb=document.getElementById('open-'+k);if(cb){cb.checked=isOpen;toggleDayHours(cb,k);}}
+  if(preset==='everyday')days.forEach(function(k){setDay(k,true);});
+  else if(preset==='weekday'){weekdays.forEach(function(k){setDay(k,true);});weekend.forEach(function(k){setDay(k,false);});}
+  else if(preset==='weekend'){weekend.forEach(function(k){setDay(k,true);});weekdays.forEach(function(k){setDay(k,false);});}
+  else if(preset==='except_mon'){days.forEach(function(k){setDay(k,true);});setDay('mon',false);}
+}
+
+// ─── Province Autocomplete (universal) ───
+
+/* ===== prov ===== */
+const ALL_PROVINCES=['กรุงเทพมหานคร','กระบี่','กาญจนบุรี','กาฬสินธุ์','กำแพงเพชร','ขอนแก่น','จันทบุรี','ฉะเชิงเทรา','ชลบุรี','ชัยนาท','ชัยภูมิ','ชุมพร','เชียงราย','เชียงใหม่','ตรัง','ตราด','ตาก','นครนายก','นครปฐม','นครพนม','นครราชสีมา','นครศรีธรรมราช','นครสวรรค์','นนทบุรี','นราธิวาส','น่าน','บึงกาฬ','บุรีรัมย์','ปทุมธานี','ประจวบคีรีขันธ์','ปราจีนบุรี','ปัตตานี','พระนครศรีอยุธยา','พะเยา','พังงา','พัทลุง','พิจิตร','พิษณุโลก','เพชรบุรี','เพชรบูรณ์','แพร่','ภูเก็ต','มหาสารคาม','มุกดาหาร','แม่ฮ่องสอน','ยโสธร','ยะลา','ร้อยเอ็ด','ระนอง','ระยอง','ราชบุรี','ลพบุรี','ลำปาง','ลำพูน','เลย','ศรีสะเกษ','สกลนคร','สงขลา','สตูล','สมุทรปราการ','สมุทรสงคราม','สมุทรสาคร','สระแก้ว','สระบุรี','สิงห์บุรี','สุโขทัย','สุพรรณบุรี','สุราษฎร์ธานี','สุรินทร์','หนองคาย','หนองบัวลำภู','อ่างทอง','อำนาจเจริญ','อุดรธานี','อุตรดิตถ์','อุทัยธานี','อุบลราชธานี'];
+
+function showProvinceBox(input,inputId,boxId){
+  const q=input.value.toLowerCase().trim();
+  const box=document.getElementById(boxId);if(!box)return;
+  const matches=q?ALL_PROVINCES.filter(p=>p.includes(q)):ALL_PROVINCES;
+  if(!matches.length){box.style.display='none';return;}
+  box.style.display='block';
+  box.innerHTML=matches.map(p=>`<div onclick="pickProvince('${p}','${inputId}','${boxId}')" style="padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:.5px solid var(--gray-200)" onmouseover="this.style.background='var(--blue-light)'" onmouseout="this.style.background='white'">${p}</div>`).join('');
+}
+function pickProvince(val,inputId,boxId){
+  const el=document.getElementById(inputId);if(el)el.value=val;
+  const box=document.getElementById(boxId);if(box)box.style.display='none';
+}
+
+document.addEventListener('change',function(e){
+  if(e.target.classList.contains('day-cb')){
+    toggleDayHours(e.target,e.target.dataset.day);
+  }
+});
+document.addEventListener('click',function(e){
+  var btn=e.target.closest('.preset-btn');
+  if(btn&&btn.dataset.preset){applyHoursPreset(btn.dataset.preset);}
+});
+document.addEventListener('click',e=>{
+  ['bProvSug','cProvSug'].forEach(id=>{
+    if(!e.target.closest('#'+id)&&!e.target.closest('#bProvince')&&!e.target.closest('#cProvince')){
+      const b=document.getElementById(id);if(b)b.style.display='none';
+    }
+  });
+  if(!e.target.closest('#placesSearch')&&!e.target.closest('#searchSuggestions')){const s=document.getElementById('searchSuggestions');if(s)s.style.display='none';}
+});
+
+/* ===== latlng ===== */
+function tryParseLatLng(){
+  const url=document.getElementById('bMapUrl')?.value||'';const statusEl=document.getElementById('latLngStatus');if(!statusEl)return;
+  let m=url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);if(m){document.getElementById('bLat').value=m[1];document.getElementById('bLng').value=m[2];statusEl.textContent='✅ พบพิกัดจาก URL อัตโนมัติ';statusEl.style.color='var(--green)';return;}
+  m=url.match(/ll=(-?\d+\.\d+),(-?\d+\.\d+)/);if(m){document.getElementById('bLat').value=m[1];document.getElementById('bLng').value=m[2];statusEl.textContent='✅ พบพิกัดจาก URL อัตโนมัติ';statusEl.style.color='var(--green)';return;}
+  m=url.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);if(m){document.getElementById('bLat').value=m[1];document.getElementById('bLng').value=m[2];statusEl.textContent='✅ พบพิกัดจาก URL อัตโนมัติ';statusEl.style.color='var(--green)';return;}
+  if(url.includes('maps.app.goo.gl')||url.includes('goo.gl/maps')){statusEl.textContent='⚠️ Short URL — กรุณากรอก Latitude/Longitude เอง';statusEl.style.color='var(--orange)';}else statusEl.textContent='';
+}
+function previewOnMap(){const lat=document.getElementById('bLat')?.value,lng=document.getElementById('bLng')?.value,url=document.getElementById('bMapUrl')?.value;if(lat&&lng&&lat!=0&&lng!=0)window.open(`https://www.google.com/maps?q=${lat},${lng}&z=16`,'_blank');else if(url)window.open(url,'_blank');else alert('กรุณากรอก Google Maps URL หรือ Latitude/Longitude ก่อน');}
+
+/* ===== standalone submit (no admin redirect, signs out after) ===== */
+async function handleRegister(){
+  const email=document.getElementById('regEmail').value.trim(),pass=document.getElementById('regPass').value,pass2=document.getElementById('regPass2').value;
+  const errEl=document.getElementById('regAccountError');errEl.style.display='none';
+  if(!selectedBizType){errEl.textContent='กรุณาเลือกประเภทธุรกิจ (ขั้นตอนที่ 1)';errEl.style.display='block';return;}
+  if(!email||!pass){errEl.textContent='กรุณากรอกอีเมลและรหัสผ่าน';errEl.style.display='block';return;}
+  if(pass.length<8){errEl.textContent='รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร';errEl.style.display='block';return;}
+  if(pass!==pass2){errEl.textContent='รหัสผ่านไม่ตรงกัน';errEl.style.display='block';return;}
+  const btn=document.getElementById('regSubmitBtn');btn.disabled=true;btn.textContent='กำลังสมัคร...';
+  const bizData=collectBizFormData(selectedBizType);
+  if(!bizData.name||!bizData.province){errEl.textContent='กรุณากลับไปกรอกชื่อสถานที่และจังหวัด (ขั้นตอนที่ 2)';errEl.style.display='block';btn.disabled=false;btn.textContent='สมัครและรอ Approve';return;}
+  try{
+    await auth.createUserWithEmailAndPassword(email,pass);
+    const contactName=document.getElementById('regContactName')?.value.trim()||'';
+    const contactPhone=document.getElementById('regContactPhone')?.value.trim()||'';
+    const contactEmail=document.getElementById('regContactEmail')?.value.trim()||email;
+    await db.collection('business_registrations').add({email,bizType:selectedBizType,bizData,contactName,contactPhone,contactEmail,status:'pending',registeredAt:firebase.firestore.FieldValue.serverTimestamp()});
+    await db.collection('business_accounts').add({email,bizType:selectedBizType,bizName:bizData.name,contactName,contactPhone,contactEmail,status:'pending',createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    // sign out so a fresh signup account is not left logged in on a shared/public link
+    try{ await auth.signOut(); }catch(_){}
+    document.getElementById('registerForm').style.display='none';
+    document.querySelector('.signup-note').style.display='none';
+    document.getElementById('signupCard').querySelector('h2').style.display='none';
+    document.getElementById('signupCard').querySelector('p').style.display='none';
+    document.getElementById('successPanel').style.display='block';
+    window.scrollTo(0,0);
+  }catch(e){
+    let msg='เกิดข้อผิดพลาด: '+e.message;
+    if(e.code==='auth/email-already-in-use')msg='อีเมลนี้มีผู้ใช้แล้ว — หากคุณเคยสมัครไว้ กรุณาเข้าสู่ระบบที่ Partner Portal';
+    if(e.code==='auth/invalid-email')msg='รูปแบบอีเมลไม่ถูกต้อง';
+    if(e.code==='auth/weak-password')msg='รหัสผ่านอ่อนเกินไป (ต้องอย่างน้อย 8 ตัว)';
+    errEl.textContent=msg;errEl.style.display='block';
+  }
+  btn.disabled=false;btn.textContent='สมัครและรอ Approve';
+}
+
+// init: show step 1 fresh (no auth listener, no admin redirect)
+document.addEventListener('DOMContentLoaded',function(){ goRegStep(1); });
+</script>
+</body>
+</html>

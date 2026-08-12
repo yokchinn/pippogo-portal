@@ -120,10 +120,6 @@ tr:last-child td{border-bottom:none;}
       <div class="auth-logo-box"><span>Pippo</span><span class="go">GO!</span></div>
       <p>Partner Portal — ระบบสำหรับผู้ประกอบการ</p>
     </div>
-    <div class="tab-row">
-      <button class="tab-btn active" onclick="switchAuthTab('login')">เข้าสู่ระบบ</button>
-      <button class="tab-btn" onclick="switchAuthTab('register')">สมัครใหม่</button>
-    </div>
     <div id="authMsg"></div>
 
     <!-- LOGIN -->
@@ -133,28 +129,10 @@ tr:last-child td{border-bottom:none;}
       <button class="btn-primary" onclick="doLogin()">เข้าสู่ระบบ</button>
     </div>
 
-    <!-- REGISTER -->
-    <div id="registerForm" style="display:none">
-      <div class="field"><label>ชื่อร้าน / โรงแรม *</label><input type="text" id="regBizName" placeholder="ชื่อสถานที่ของคุณ"></div>
-      <div class="field-row">
-        <div class="field"><label>อีเมล *</label><input type="email" id="regEmail" placeholder="email@example.com"></div>
-        <div class="field"><label>รหัสผ่าน *</label><input type="password" id="regPassword" placeholder="อย่างน้อย 6 ตัว"></div>
-      </div>
-      <div class="field">
-        <label>ประเภทสถานที่ *</label>
-        <select id="regCategory">
-          <option value="">-- เลือกประเภท --</option>
-          <option value="hotel">🏨 โรงแรม / ที่พัก</option>
-          <option value="cafe">🍽️ ร้านอาหาร / คาเฟ่</option>
-          <option value="mall">🏬 ห้างสรรพสินค้า</option>
-          <option value="attraction">🌳 สถานที่ท่องเที่ยว</option>
-          <option value="vet">🏥 โรงพยาบาลสัตว์</option>
-          <option value="petshop">🛍️ Pet Shop</option>
-          <option value="boarding">🏡 รับฝากสัตว์เลี้ยง</option>
-        </select>
-      </div>
-      <div class="field"><label>เบอร์โทรติดต่อ</label><input type="tel" id="regPhone" placeholder="0812345678"></div>
-      <button class="btn-primary" onclick="doRegister()">สมัครสมาชิก</button>
+    <!-- SIGNUP LINK (register moved to /signup) -->
+    <div style="text-align:center;margin-top:18px;padding-top:16px;border-top:1px solid var(--gray-200)">
+      <span style="font-size:13px;color:var(--gray-500)">ยังไม่มีบัญชี? </span>
+      <a href="signup" style="font-size:13px;color:var(--blue);font-weight:600;text-decoration:none">สมัครเป็นผู้ประกอบการ →</a>
     </div>
   </div>
 </div>
@@ -294,13 +272,6 @@ function showApp() {
 }
 
 // ── AUTH ACTIONS ──
-function switchAuthTab(tab) {
-  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', (tab==='login'&&i===0)||(tab==='register'&&i===1)));
-  document.getElementById('loginForm').style.display = tab==='login'?'block':'none';
-  document.getElementById('registerForm').style.display = tab==='register'?'block':'none';
-  document.getElementById('authMsg').innerHTML = '';
-}
-
 async function doLogin() {
   const email = document.getElementById('loginEmail').value.trim();
   const pass = document.getElementById('loginPassword').value;
@@ -310,30 +281,6 @@ async function doLogin() {
     await auth.signInWithEmailAndPassword(email, pass);
   } catch(e) {
     msg.innerHTML = `<div class="error-msg">เข้าสู่ระบบไม่สำเร็จ: ${e.message}</div>`;
-  }
-}
-
-async function doRegister() {
-  const bizName = document.getElementById('regBizName').value.trim();
-  const email = document.getElementById('regEmail').value.trim();
-  const pass = document.getElementById('regPassword').value;
-  const category = document.getElementById('regCategory').value;
-  const phone = document.getElementById('regPhone').value.trim();
-  const msg = document.getElementById('authMsg');
-
-  if (!bizName||!email||!pass||!category) {
-    msg.innerHTML = '<div class="error-msg">กรุณากรอกข้อมูลให้ครบ</div>'; return;
-  }
-  try {
-    const cred = await auth.createUserWithEmailAndPassword(email, pass);
-    await db.collection('business_accounts').doc(cred.user.uid).set({
-      email, bizName, category, phone,
-      status: 'pending',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    msg.innerHTML = '<div class="success-msg">✅ สมัครสำเร็จ! Admin จะตรวจสอบและเปิดใช้งานให้เร็วๆ นี้</div>';
-  } catch(e) {
-    msg.innerHTML = `<div class="error-msg">สมัครไม่สำเร็จ: ${e.message}</div>`;
   }
 }
 
