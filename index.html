@@ -230,6 +230,7 @@ tr:hover td{background:var(--gray-50);}
         <button class="nav-item" onclick="goPage('adminContacts')"><span>📒</span> ข้อมูลผู้ประกอบการ</button>
         <button class="nav-item" onclick="goPage('adminBookings')"><span>📋</span> Bookings</button>
         <button class="nav-item" onclick="goPage('adminReviewMod')"><span>🚩</span> ตรวจรีวิว <span id="reportCount" style="background:var(--red);color:white;border-radius:20px;padding:1px 7px;font-size:10px;margin-left:4px"></span></button>
+        <button class="nav-item" onclick="goPage('adminFeatured')"><span>✨</span> ร้านแนะนำ (บทความ)</button>
         <button class="nav-item superadmin-only" onclick="goPage('adminRevenue')"><span>💰</span> Revenue</button>
         <button class="nav-item superadmin-only" onclick="goPage('adminPartners')"><span>🏪</span> จัดการ Partner</button>
         <button class="nav-item superadmin-only" onclick="goPage('adminTeam')"><span>🛡️</span> จัดการ Admin</button>
@@ -385,6 +386,13 @@ tr:hover td{background:var(--gray-50);}
           <button class="btn btn-sm" id="revTabAll" onclick="switchReviewTab('all')" style="background:var(--gray-100);color:var(--gray-700)">💬 รีวิวทั้งหมด</button>
         </div>
         <div id="reviewModList"><div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div></div>
+      </div>
+      <div class="page" id="page-adminFeatured">
+        <div class="flex-between">
+          <div><div class="page-title">ร้านแนะนำ (บทความรีวิว) ✨</div><div class="page-sub">เขียนบทความรีวิวร้าน โชว์เป็นการ์ดใหญ่บนหน้าแรกแอป</div></div>
+          <button class="btn" onclick="openFeaturedEditor()" style="background:var(--blue);color:white">+ เขียนบทความใหม่</button>
+        </div>
+        <div id="featuredList" style="margin-top:16px"><div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div></div>
       </div>
       <div class="page" id="page-adminRevenue">
         <div class="page-title">Revenue</div><div class="page-sub">รายได้จากการจองผ่านแอป PippoGO</div>
@@ -562,6 +570,47 @@ tr:hover td{background:var(--gray-50);}
       <div id="addPlaceFormBody"></div>
     </div>
     <div class="modal-footer"><button class="btn btn-primary btn-sm" onclick="saveNewPlace()">✓ เพิ่มสถานที่ & ขึ้นแอปทันที</button></div>
+  </div>
+</div>
+
+<!-- ✅ Modal: เขียน/แก้บทความร้านแนะนำ -->
+<div class="modal-overlay" id="featuredModal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header"><h3 id="featuredModalTitle">✨ เขียนบทความใหม่</h3><button class="modal-close" onclick="closeModal('featuredModal')">✕</button></div>
+    <div class="modal-body">
+      <div id="featuredMsg"></div>
+      <div class="field-row">
+        <div class="field"><label>หัวข้อบทความ *</label><input type="text" id="fTitle" placeholder="เช่น พาน้องหมาไปคาเฟ่สุดชิคย่านอารีย์"></div>
+        <div class="field"><label>ชื่อร้าน</label><input type="text" id="fPlaceName" placeholder="เช่น Timo and Tintin"></div>
+      </div>
+      <div class="field"><label>คำโปรย (โชว์บนการ์ด)</label><input type="text" id="fSubtitle" placeholder="สั้น ๆ ดึงดูดให้กดอ่าน"></div>
+      <div class="field"><label>รูปปก (URL) *</label><input type="url" id="fCover" placeholder="https://..." oninput="fCoverPreview(this.value)"></div>
+      <div id="fCoverPrev" style="margin-bottom:10px"></div>
+      <div class="field-row">
+        <div class="field"><label>ดาวรีวิว (0-5)</label><input type="number" id="fRating" min="0" max="5" step="0.1" placeholder="เช่น 4.5"></div>
+        <div class="field"><label>ช่วงราคา</label><input type="text" id="fPrice" placeholder="เช่น 100-300 บาท/คน หรือ ฿฿"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>แท็ก (คั่นด้วยจุลภาค ,)</label><input type="text" id="fTags" placeholder="คาเฟ่, กรุงเทพ, สุนัขเข้าได้"></div>
+        <div class="field"><label>ลิงก์แผนที่ร้าน (Google Maps)</label><input type="url" id="fMapUrl" placeholder="https://maps.google.com/..."></div>
+      </div>
+
+      <div class="form-section-title" style="margin-top:8px">📄 เนื้อหาบทความ</div>
+      <div style="font-size:12px;color:var(--gray-500);margin-bottom:10px">เพิ่มบล็อกข้อความหรือรูปสลับกันได้ตามใจ (เรียงจากบนลงล่าง)</div>
+      <div id="blocksContainer"></div>
+      <div style="display:flex;gap:8px;margin:10px 0">
+        <button type="button" class="btn btn-sm" onclick="addBlock('text')" style="background:var(--blue-light);color:var(--blue)">+ เพิ่มข้อความ</button>
+        <button type="button" class="btn btn-sm" onclick="addBlock('image')" style="background:var(--green-light);color:var(--green)">+ เพิ่มรูป</button>
+      </div>
+
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-top:10px;cursor:pointer">
+        <input type="checkbox" id="fPublished" checked> เผยแพร่ (โชว์ในแอปทันที) — เอาออกถ้าอยากบันทึกเป็นฉบับร่างก่อน
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="closeModal('featuredModal')" style="background:var(--gray-100);color:var(--gray-700)">ยกเลิก</button>
+      <button class="btn btn-primary btn-sm" id="fSaveBtn" onclick="saveFeatured()">✓ บันทึกบทความ</button>
+    </div>
   </div>
 </div>
 
@@ -968,6 +1017,7 @@ function goPage(pageId){
   if(pageId==='adminPlaces')loadPlaces('all');
   if(pageId==='adminBookings')loadAdminBookings();
   if(pageId==='adminReviewMod')loadReviewMod();
+  if(pageId==='adminFeatured')loadFeatured();
   if(pageId==='adminContacts')loadContacts();
   if(pageId==='adminRevenue')loadRevenue();
   if(pageId==='adminTeam')loadAdminTeam();
@@ -1900,6 +1950,168 @@ async function modDismissReport(reportId){
     await db.collection('review_reports').doc(reportId).update({status:'dismissed'});
     loadReviewMod();
   }catch(e){alert('ผิดพลาด: '+e.message);}
+}
+
+// ─── Featured Reviews (ร้านแนะนำ/บทความ) ───
+let editingFeaturedId = null;
+
+async function loadFeatured(){
+  const el=document.getElementById('featuredList');
+  el.innerHTML='<div class="skeleton"></div><div class="skeleton"></div>';
+  try{
+    const snap=await db.collection('featured_reviews').orderBy('createdAt','desc').limit(50).get();
+    if(snap.empty){el.innerHTML='<div class="empty-state"><div class="empty-icon">✨</div><p>ยังไม่มีบทความ กด "เขียนบทความใหม่" เพื่อเริ่ม</p></div>';return;}
+    el.innerHTML=snap.docs.map(doc=>{
+      const d=doc.data();
+      const dt=d.createdAt?.toDate?d.createdAt.toDate().toLocaleDateString('th-TH'):'';
+      const pub=d.published!==false;
+      const nBlocks=(d.blocks||[]).length;
+      return `<div class="card" style="margin-bottom:12px;display:flex;gap:14px;align-items:flex-start">
+        <img src="${d.coverImage||''}" onerror="this.style.display='none'" style="width:110px;height:74px;object-fit:cover;border-radius:10px;background:var(--gray-100)">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+            <span class="badge badge-${pub?'approved':'pending'}">${pub?'✅ เผยแพร่':'📝 ฉบับร่าง'}</span>
+            ${d.rating?`<span style="font-size:12px;color:#FFA000">★ ${Number(d.rating).toFixed(1)}</span>`:''}
+            <span style="font-size:11px;color:var(--gray-500)">${nBlocks} บล็อก · ${dt}</span>
+          </div>
+          <div style="font-size:15px;font-weight:700;color:var(--gray-700)">${d.title||'(ไม่มีหัวข้อ)'}</div>
+          <div style="font-size:12px;color:var(--gray-500)">${d.placeName||''} ${d.subtitle?'· '+d.subtitle:''}</div>
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+            <button class="btn-icon btn-view" onclick="openFeaturedEditor('${doc.id}')">✏️ แก้ไข</button>
+            <button class="btn-icon ${pub?'btn-reject':'btn-approve'}" onclick="toggleFeaturedPublish('${doc.id}',${!pub})">${pub?'🙈 ซ่อน':'📢 เผยแพร่'}</button>
+            <button class="btn-icon btn-reject" onclick="deleteFeatured('${doc.id}')">🗑 ลบ</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    el.innerHTML='<div class="empty-state"><p>เกิดข้อผิดพลาด: '+e.message+'</p><p style="font-size:12px;color:var(--gray-500)">ถ้าเป็น Missing index กดลิงก์ใน Console (F12) เพื่อสร้าง index</p></div>';
+  }
+}
+
+function fCoverPreview(url){
+  const el=document.getElementById('fCoverPrev');
+  if(!el)return;
+  el.innerHTML=url?`<img src="${url}" onerror="this.style.display='none'" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px">`:'';
+}
+
+function addBlock(type, value='', caption=''){
+  const box=document.getElementById('blocksContainer');
+  const row=document.createElement('div');
+  row.className='fblock';
+  row.dataset.type=type;
+  row.style.cssText='border:1.5px solid var(--gray-200);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--gray-50)';
+  if(type==='text'){
+    row.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:12px;font-weight:700;color:var(--blue)">📝 ข้อความ</span>
+        <div>
+          <button type="button" onclick="moveBlock(this,-1)" style="border:none;background:none;cursor:pointer">⬆️</button>
+          <button type="button" onclick="moveBlock(this,1)" style="border:none;background:none;cursor:pointer">⬇️</button>
+          <button type="button" onclick="this.closest('.fblock').remove()" style="border:none;background:none;cursor:pointer;color:var(--red)">✕</button>
+        </div>
+      </div>
+      <textarea class="fblock-value" rows="4" style="width:100%;padding:10px;border:1px solid var(--gray-200);border-radius:8px;font-family:var(--font);font-size:13px;resize:vertical" placeholder="เขียนเนื้อหาย่อหน้านี้...">${value}</textarea>`;
+  }else{
+    row.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:12px;font-weight:700;color:var(--green)">🖼️ รูปภาพ</span>
+        <div>
+          <button type="button" onclick="moveBlock(this,-1)" style="border:none;background:none;cursor:pointer">⬆️</button>
+          <button type="button" onclick="moveBlock(this,1)" style="border:none;background:none;cursor:pointer">⬇️</button>
+          <button type="button" onclick="this.closest('.fblock').remove()" style="border:none;background:none;cursor:pointer;color:var(--red)">✕</button>
+        </div>
+      </div>
+      <input type="url" class="fblock-value" style="width:100%;padding:9px 12px;border:1px solid var(--gray-200);border-radius:8px;font-family:var(--font);font-size:13px;margin-bottom:6px" placeholder="URL รูปภาพ https://..." value="${value}" oninput="this.nextElementSibling.nextElementSibling.querySelector('img')?.setAttribute('src',this.value)">
+      <input type="text" class="fblock-caption" style="width:100%;padding:9px 12px;border:1px solid var(--gray-200);border-radius:8px;font-family:var(--font);font-size:12px" placeholder="คำบรรยายใต้รูป (ไม่บังคับ)" value="${caption}">
+      <div style="margin-top:6px">${value?`<img src="${value}" onerror="this.style.display='none'" style="max-height:120px;border-radius:8px">`:''}</div>`;
+  }
+  box.appendChild(row);
+}
+function moveBlock(btn,dir){
+  const row=btn.closest('.fblock');
+  if(dir<0&&row.previousElementSibling) row.parentNode.insertBefore(row,row.previousElementSibling);
+  if(dir>0&&row.nextElementSibling) row.parentNode.insertBefore(row.nextElementSibling,row);
+}
+function collectBlocks(){
+  return Array.from(document.querySelectorAll('#blocksContainer .fblock')).map(row=>{
+    const type=row.dataset.type;
+    const value=row.querySelector('.fblock-value')?.value?.trim()||'';
+    const caption=row.querySelector('.fblock-caption')?.value?.trim()||'';
+    return {type,value,caption};
+  }).filter(b=>b.value);
+}
+
+async function openFeaturedEditor(id){
+  editingFeaturedId=id||null;
+  document.getElementById('featuredMsg').innerHTML='';
+  document.getElementById('featuredModalTitle').textContent=id?'✏️ แก้ไขบทความ':'✨ เขียนบทความใหม่';
+  ['fTitle','fPlaceName','fSubtitle','fCover','fRating','fPrice','fTags','fMapUrl'].forEach(k=>document.getElementById(k).value='');
+  document.getElementById('fPublished').checked=true;
+  document.getElementById('blocksContainer').innerHTML='';
+  document.getElementById('fCoverPrev').innerHTML='';
+  if(id){
+    const doc=await db.collection('featured_reviews').doc(id).get();
+    const d=doc.data()||{};
+    document.getElementById('fTitle').value=d.title||'';
+    document.getElementById('fPlaceName').value=d.placeName||'';
+    document.getElementById('fSubtitle').value=d.subtitle||'';
+    document.getElementById('fCover').value=d.coverImage||'';
+    document.getElementById('fRating').value=d.rating||'';
+    document.getElementById('fPrice').value=d.priceRange||'';
+    document.getElementById('fTags').value=(d.tags||[]).join(', ');
+    document.getElementById('fMapUrl').value=d.googleMapUrl||'';
+    document.getElementById('fPublished').checked=d.published!==false;
+    fCoverPreview(d.coverImage||'');
+    (d.blocks||[]).forEach(b=>addBlock(b.type||'text', b.value||'', b.caption||''));
+  }else{
+    addBlock('text');
+  }
+  openModal('featuredModal');
+}
+
+async function saveFeatured(){
+  const msg=document.getElementById('featuredMsg');msg.innerHTML='';
+  const title=document.getElementById('fTitle').value.trim();
+  const cover=document.getElementById('fCover').value.trim();
+  if(!title){msg.innerHTML='<div class="error-msg">กรุณากรอกหัวข้อบทความ</div>';return;}
+  if(!cover){msg.innerHTML='<div class="error-msg">กรุณาใส่ URL รูปปก</div>';return;}
+  const tags=document.getElementById('fTags').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const data={
+    title,
+    placeName:document.getElementById('fPlaceName').value.trim(),
+    subtitle:document.getElementById('fSubtitle').value.trim(),
+    coverImage:cover,
+    rating:parseFloat(document.getElementById('fRating').value)||0,
+    priceRange:document.getElementById('fPrice').value.trim(),
+    tags,
+    googleMapUrl:document.getElementById('fMapUrl').value.trim(),
+    blocks:collectBlocks(),
+    published:document.getElementById('fPublished').checked
+  };
+  const btn=document.getElementById('fSaveBtn');btn.disabled=true;btn.textContent='กำลังบันทึก...';
+  try{
+    if(editingFeaturedId){
+      data.updatedAt=firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection('featured_reviews').doc(editingFeaturedId).update(data);
+    }else{
+      data.createdAt=firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection('featured_reviews').add(data);
+    }
+    closeModal('featuredModal');
+    loadFeatured();
+  }catch(e){
+    msg.innerHTML='<div class="error-msg">เกิดข้อผิดพลาด: '+e.message+'</div>';
+  }
+  btn.disabled=false;btn.textContent='✓ บันทึกบทความ';
+}
+
+async function toggleFeaturedPublish(id,pub){
+  await db.collection('featured_reviews').doc(id).update({published:pub});
+  loadFeatured();
+}
+async function deleteFeatured(id){
+  if(!confirm('ลบบทความนี้ถาวร?'))return;
+  await db.collection('featured_reviews').doc(id).delete();
+  loadFeatured();
 }
 
 document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
