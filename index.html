@@ -7,6 +7,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
 :root {
@@ -584,7 +585,16 @@ tr:hover td{background:var(--gray-50);}
         <div class="field"><label>ชื่อร้าน</label><input type="text" id="fPlaceName" placeholder="เช่น Timo and Tintin"></div>
       </div>
       <div class="field"><label>คำโปรย (โชว์บนการ์ด)</label><input type="text" id="fSubtitle" placeholder="สั้น ๆ ดึงดูดให้กดอ่าน"></div>
-      <div class="field"><label>รูปปก (URL) *</label><input type="url" id="fCover" placeholder="https://..." oninput="fCoverPreview(this.value)"></div>
+      <div class="field"><label>รูปปก *</label>
+        <input type="url" id="fCover" placeholder="วาง URL หรือกดปุ่มอัปโหลดรูป →" oninput="fCoverPreview(this.value)">
+        <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+          <label style="background:var(--green-light);color:var(--green);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap">
+            📤 อัปโหลดรูปปก
+            <input type="file" accept="image/*" style="display:none" onchange="handleCoverUpload(this)">
+          </label>
+          <span id="fCoverStatus" style="font-size:11px;color:var(--gray-500)"></span>
+        </div>
+      </div>
       <div id="fCoverPrev" style="margin-bottom:10px"></div>
       <div class="field-row">
         <div class="field"><label>ดาวรีวิว (0-5)</label><input type="number" id="fRating" min="0" max="5" step="0.1" placeholder="เช่น 4.5"></div>
@@ -727,6 +737,47 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+const storage = firebase.storage();
+
+// ─── อัปโหลดรูปขึ้น Firebase Storage โฟลเดอร์ featured/ แล้วคืน URL ───
+async function uploadFeaturedImage(file, statusEl){
+  if(!file) return null;
+  if(!file.type || !file.type.startsWith('image/')){ alert('กรุณาเลือกไฟล์รูปภาพ'); return null; }
+  if(file.size > 5*1024*1024){ alert('รูปต้องมีขนาดไม่เกิน 5MB'); return null; }
+  if(statusEl) statusEl.textContent = '⏳ กำลังอัปโหลด...';
+  try{
+    const ext = (file.name.split('.').pop()||'jpg').toLowerCase();
+    const ref = storage.ref().child('featured/'+Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.'+ext);
+    const snap = await ref.put(file);
+    const url = await snap.ref.getDownloadURL();
+    if(statusEl) statusEl.textContent = '✅ อัปโหลดสำเร็จ';
+    return url;
+  }catch(e){
+    if(statusEl) statusEl.textContent = '❌ อัปโหลดไม่สำเร็จ: '+e.message;
+    return null;
+  }
+}
+// อัปโหลดรูปปก → เติม URL ลงช่อง + preview
+async function handleCoverUpload(input){
+  const url = await uploadFeaturedImage(input.files[0], document.getElementById('fCoverStatus'));
+  if(url){ document.getElementById('fCover').value = url; fCoverPreview(url); }
+  input.value='';
+}
+// อัปโหลดรูปในบล็อกบทความ → เติม URL + preview เฉพาะบล็อกนั้น
+async function handleBlockUpload(input){
+  const block = input.closest('.fblock');
+  const url = await uploadFeaturedImage(input.files[0], block.querySelector('.fblock-status'));
+  if(url){
+    block.querySelector('.fblock-value').value = url;
+    blockUrlPreview(block.querySelector('.fblock-value'));
+  }
+  input.value='';
+}
+// แสดง preview รูปในบล็อกเมื่อพิมพ์/วาง URL เอง
+function blockUrlPreview(input){
+  const p = input.closest('.fblock').querySelector('.fblock-prev');
+  if(p) p.innerHTML = input.value ? '<img src="'+input.value+'" onerror="this.style.display=\'none\'" style="max-height:120px;border-radius:8px">' : '';
+}
 const ADMIN_EMAILS = ['admin@pippogo.com','seth@pippogo.com','yok-chinn@hotmail.com'];
 const SUPERADMIN_EMAIL = 'yok-chinn@hotmail.com';
 let currentUserRole = 'admin'; // จะถูก set จาก Firestore
@@ -2020,9 +2071,16 @@ function addBlock(type, value='', caption=''){
           <button type="button" onclick="this.closest('.fblock').remove()" style="border:none;background:none;cursor:pointer;color:var(--red)">✕</button>
         </div>
       </div>
-      <input type="url" class="fblock-value" style="width:100%;padding:9px 12px;border:1px solid var(--gray-200);border-radius:8px;font-family:var(--font);font-size:13px;margin-bottom:6px" placeholder="URL รูปภาพ https://..." value="${value}" oninput="this.nextElementSibling.nextElementSibling.querySelector('img')?.setAttribute('src',this.value)">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+        <label style="background:var(--green-light);color:var(--green);padding:7px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap">
+          📤 อัปโหลดรูป
+          <input type="file" accept="image/*" style="display:none" onchange="handleBlockUpload(this)">
+        </label>
+        <span class="fblock-status" style="font-size:11px;color:var(--gray-500)"></span>
+      </div>
+      <input type="url" class="fblock-value" style="width:100%;padding:9px 12px;border:1px solid var(--gray-200);border-radius:8px;font-family:var(--font);font-size:13px;margin-bottom:6px" placeholder="หรือวาง URL รูปภาพ https://..." value="${value}" oninput="blockUrlPreview(this)">
       <input type="text" class="fblock-caption" style="width:100%;padding:9px 12px;border:1px solid var(--gray-200);border-radius:8px;font-family:var(--font);font-size:12px" placeholder="คำบรรยายใต้รูป (ไม่บังคับ)" value="${caption}">
-      <div style="margin-top:6px">${value?`<img src="${value}" onerror="this.style.display='none'" style="max-height:120px;border-radius:8px">`:''}</div>`;
+      <div class="fblock-prev" style="margin-top:6px">${value?`<img src="${value}" onerror="this.style.display='none'" style="max-height:120px;border-radius:8px">`:''}</div>`;
   }
   box.appendChild(row);
 }
