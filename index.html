@@ -232,6 +232,7 @@ tr:hover td{background:var(--gray-50);}
         <button class="nav-item" onclick="goPage('adminBookings')"><span>📋</span> Bookings</button>
         <button class="nav-item" onclick="goPage('adminReviewMod')"><span>🚩</span> ตรวจรีวิว <span id="reportCount" style="background:var(--red);color:white;border-radius:20px;padding:1px 7px;font-size:10px;margin-left:4px"></span></button>
         <button class="nav-item" onclick="goPage('adminFeatured')"><span>✨</span> ร้านแนะนำ (บทความ)</button>
+        <button class="nav-item" onclick="goPage('adminInbox')"><span>📣</span> กล่องข่าวสาร (แอป)</button>
         <button class="nav-item superadmin-only" onclick="goPage('adminRevenue')"><span>💰</span> Revenue</button>
         <button class="nav-item superadmin-only" onclick="goPage('adminPartners')"><span>🏪</span> จัดการ Partner</button>
         <button class="nav-item superadmin-only" onclick="goPage('adminTeam')"><span>🛡️</span> จัดการ Admin</button>
@@ -394,6 +395,14 @@ tr:hover td{background:var(--gray-50);}
           <button class="btn" onclick="openFeaturedEditor()" style="background:var(--blue);color:white">+ เขียนบทความใหม่</button>
         </div>
         <div id="featuredList" style="margin-top:16px"><div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div></div>
+      </div>
+      <div class="page" id="page-adminInbox">
+        <div class="flex-between">
+          <div><div class="page-title">กล่องข่าวสาร (ในแอป) 📣</div><div class="page-sub">โพสต์ข่าว/โปรโมชั่น/แจ้งเตือน → เด้งเข้ากล่องจดหมายในแอปลูกค้า (ไอคอนกระดิ่งมุมขวาบน)</div></div>
+          <button class="btn" onclick="openInboxEditor()" style="background:var(--blue);color:white">+ โพสต์ข่าวใหม่</button>
+        </div>
+        <div style="font-size:12px;color:var(--gray-500);background:var(--blue-light);border-radius:8px;padding:10px 14px;margin:12px 0">💡 อยากให้เด้งเป็น Push ด้วย ส่งจาก Firebase Console แยกต่างหาก — หน้านี้คือ "กล่องจดหมายในแอป" ที่ลูกค้ากดอ่านย้อนหลังได้</div>
+        <div id="inboxList" style="margin-top:8px"><div class="loading"><div class="spinner"></div><br>กำลังโหลด...</div></div>
       </div>
       <div class="page" id="page-adminRevenue">
         <div class="page-title">Revenue</div><div class="page-sub">รายได้จากการจองผ่านแอป PippoGO</div>
@@ -575,6 +584,45 @@ tr:hover td{background:var(--gray-50);}
 </div>
 
 <!-- ✅ Modal: เขียน/แก้บทความร้านแนะนำ -->
+<!-- ✅ Modal: โพสต์ข่าวเข้ากล่องข่าวสารในแอป -->
+<div class="modal-overlay" id="inboxModal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header"><h3 id="inboxModalTitle">📣 โพสต์ข่าวใหม่</h3><button class="modal-close" onclick="closeModal('inboxModal')">✕</button></div>
+    <div class="modal-body">
+      <div id="inboxMsg"></div>
+      <div class="field"><label>ประเภทข่าว</label>
+        <select id="nType" style="width:100%;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:var(--font);font-size:14px">
+          <option value="broadcast">📣 ประกาศทั่วไป</option>
+          <option value="review">⭐ รีวิวร้าน</option>
+          <option value="update">🎉 อัปเดตแอป</option>
+          <option value="news">📰 ข่าวสาร/โปรโมชั่น</option>
+        </select>
+      </div>
+      <div class="field"><label>หัวข้อ *</label><input type="text" id="nTitle" placeholder="เช่น 🎉 ร้านใหม่มาแล้ว! คาเฟ่น้องหมาย่านอารีย์"></div>
+      <div class="field"><label>รายละเอียด</label><textarea id="nBody" rows="4" style="width:100%;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:var(--font);font-size:14px;resize:vertical" placeholder="เนื้อหาข่าว..."></textarea></div>
+      <div class="field"><label>รูปประกอบ (ไม่บังคับ)</label>
+        <input type="hidden" id="nImage">
+        <div style="display:flex;gap:8px;align-items:center">
+          <label style="background:var(--green-light);color:var(--green);padding:9px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap">
+            📤 อัปโหลดรูป
+            <input type="file" accept="image/*" style="display:none" onchange="handleInboxUpload(this)">
+          </label>
+          <span id="nImageStatus" style="font-size:11px;color:var(--gray-500)"></span>
+        </div>
+        <div id="nImagePrev" style="margin-top:8px"></div>
+      </div>
+      <div class="field"><label>ลิงก์ปุ่ม "ดูเพิ่มเติม" (ไม่บังคับ)</label><input type="url" id="nLink" placeholder="https://... (เช่น ลิงก์ร้าน หรือ App Store)"></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-top:10px;cursor:pointer">
+        <input type="checkbox" id="nPublished" checked> เผยแพร่ทันที (โชว์ในกล่องข่าวสารของแอป)
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="closeModal('inboxModal')" style="background:var(--gray-100);color:var(--gray-700)">ยกเลิก</button>
+      <button class="btn btn-primary btn-sm" id="nSaveBtn" onclick="saveInbox()">✓ โพสต์ข่าว</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="featuredModal">
   <div class="modal" style="max-width:640px">
     <div class="modal-header"><h3 id="featuredModalTitle">✨ เขียนบทความใหม่</h3><button class="modal-close" onclick="closeModal('featuredModal')">✕</button></div>
@@ -1106,6 +1154,7 @@ function goPage(pageId){
   if(pageId==='adminBookings')loadAdminBookings();
   if(pageId==='adminReviewMod')loadReviewMod();
   if(pageId==='adminFeatured')loadFeatured();
+  if(pageId==='adminInbox')loadInbox();
   if(pageId==='adminContacts')loadContacts();
   if(pageId==='adminRevenue')loadRevenue();
   if(pageId==='adminTeam')loadAdminTeam();
@@ -2080,7 +2129,10 @@ async function loadFeatured(){
 function fCoverPreview(url){
   const el=document.getElementById('fCoverPrev');
   if(!el)return;
-  el.innerHTML=url?`<img src="${url}" onerror="this.style.display='none'" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px">`:'';
+  el.innerHTML = url ? `<div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+    <img src="${url}" onerror="this.style.display='none'" style="width:90px;height:90px;object-fit:cover;border-radius:10px;border:1px solid var(--gray-200)">
+    <div style="font-size:12px;color:var(--green);font-weight:600">✅ รูปปกที่อัปแล้ว</div>
+  </div>` : '';
 }
 
 function addBlock(type, value='', caption=''){
@@ -2207,6 +2259,110 @@ async function deleteFeatured(id){
   if(!confirm('ลบบทความนี้ถาวร?'))return;
   await db.collection('featured_reviews').doc(id).delete();
   loadFeatured();
+}
+
+// ─── กล่องข่าวสาร (announcements) ───
+let editingInboxId=null;
+const INBOX_TYPES={broadcast:'📣 ประกาศ',review:'⭐ รีวิวร้าน',update:'🎉 อัปเดต',news:'📰 ข่าวสาร'};
+
+async function loadInbox(){
+  const el=document.getElementById('inboxList');
+  el.innerHTML='<div class="skeleton"></div><div class="skeleton"></div>';
+  try{
+    const snap=await db.collection('announcements').orderBy('createdAt','desc').limit(50).get();
+    if(snap.empty){el.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><p>ยังไม่มีข่าว กด "โพสต์ข่าวใหม่" เพื่อเริ่ม</p></div>';return;}
+    el.innerHTML=snap.docs.map(doc=>{
+      const d=doc.data();
+      const dt=d.createdAt?.toDate?d.createdAt.toDate().toLocaleString('th-TH'):'';
+      const pub=d.published!==false;
+      return `<div class="card" style="margin-bottom:12px;display:flex;gap:14px;align-items:flex-start">
+        ${d.imageUrl?`<img src="${d.imageUrl}" onerror="this.style.display='none'" style="width:90px;height:64px;object-fit:cover;border-radius:10px;background:var(--gray-100)">`:'<div style="width:90px;height:64px;border-radius:10px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;font-size:24px">📣</div>'}
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+            <span class="badge badge-${pub?'approved':'pending'}">${pub?'✅ เผยแพร่':'📝 ซ่อน'}</span>
+            <span style="font-size:11px;color:var(--gray-500)">${INBOX_TYPES[d.type]||d.type||''} · ${dt}</span>
+          </div>
+          <div style="font-size:15px;font-weight:700;color:var(--gray-700)">${d.title||'(ไม่มีหัวข้อ)'}</div>
+          <div style="font-size:12px;color:var(--gray-500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.body||''}</div>
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+            <button class="btn-icon btn-view" onclick="openInboxEditor('${doc.id}')">✏️ แก้ไข</button>
+            <button class="btn-icon ${pub?'btn-reject':'btn-approve'}" onclick="toggleInboxPublish('${doc.id}',${!pub})">${pub?'🙈 ซ่อน':'📢 เผยแพร่'}</button>
+            <button class="btn-icon btn-reject" onclick="deleteInbox('${doc.id}')">🗑 ลบ</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    el.innerHTML='<div class="empty-state"><p>เกิดข้อผิดพลาด: '+e.message+'</p><p style="font-size:12px;color:var(--gray-500)">ถ้าเป็น Missing index กดลิงก์ใน Console (F12)</p></div>';
+  }
+}
+
+async function handleInboxUpload(input){
+  const url=await uploadFeaturedImage(input.files[0], document.getElementById('nImageStatus'));
+  if(url){ document.getElementById('nImage').value=url; document.getElementById('nImagePrev').innerHTML='<img src="'+url+'" style="width:90px;height:90px;object-fit:cover;border-radius:10px;border:1px solid var(--gray-200)">'; }
+  input.value='';
+}
+
+async function openInboxEditor(id){
+  editingInboxId=id||null;
+  document.getElementById('inboxMsg').innerHTML='';
+  document.getElementById('inboxModalTitle').textContent=id?'✏️ แก้ไขข่าว':'📣 โพสต์ข่าวใหม่';
+  ['nTitle','nBody','nImage','nLink'].forEach(k=>document.getElementById(k).value='');
+  document.getElementById('nType').value='broadcast';
+  document.getElementById('nPublished').checked=true;
+  document.getElementById('nImageStatus').textContent='';
+  document.getElementById('nImagePrev').innerHTML='';
+  if(id){
+    const doc=await db.collection('announcements').doc(id).get();
+    const d=doc.data()||{};
+    document.getElementById('nType').value=d.type||'broadcast';
+    document.getElementById('nTitle').value=d.title||'';
+    document.getElementById('nBody').value=d.body||'';
+    document.getElementById('nImage').value=d.imageUrl||'';
+    document.getElementById('nLink').value=d.link||'';
+    document.getElementById('nPublished').checked=d.published!==false;
+    if(d.imageUrl) document.getElementById('nImagePrev').innerHTML='<img src="'+d.imageUrl+'" style="width:90px;height:90px;object-fit:cover;border-radius:10px;border:1px solid var(--gray-200)">';
+  }
+  openModal('inboxModal');
+}
+
+async function saveInbox(){
+  const msg=document.getElementById('inboxMsg');msg.innerHTML='';
+  const title=document.getElementById('nTitle').value.trim();
+  if(!title){msg.innerHTML='<div class="error-msg">กรุณากรอกหัวข้อ</div>';return;}
+  const data={
+    type:document.getElementById('nType').value,
+    title,
+    body:document.getElementById('nBody').value.trim(),
+    imageUrl:document.getElementById('nImage').value.trim(),
+    link:document.getElementById('nLink').value.trim(),
+    published:document.getElementById('nPublished').checked
+  };
+  const btn=document.getElementById('nSaveBtn');btn.disabled=true;btn.textContent='กำลังบันทึก...';
+  try{
+    if(editingInboxId){
+      data.updatedAt=firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection('announcements').doc(editingInboxId).update(data);
+    }else{
+      data.createdAt=firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection('announcements').add(data);
+    }
+    closeModal('inboxModal');
+    loadInbox();
+  }catch(e){
+    msg.innerHTML='<div class="error-msg">เกิดข้อผิดพลาด: '+e.message+'</div>';
+  }
+  btn.disabled=false;btn.textContent='✓ โพสต์ข่าว';
+}
+
+async function toggleInboxPublish(id,pub){
+  await db.collection('announcements').doc(id).update({published:pub});
+  loadInbox();
+}
+async function deleteInbox(id){
+  if(!confirm('ลบข่าวนี้ถาวร?'))return;
+  await db.collection('announcements').doc(id).delete();
+  loadInbox();
 }
 
 document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
